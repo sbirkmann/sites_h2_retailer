@@ -67,6 +67,16 @@ export default function Navbar() {
             </button>
           </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {isMenuOpen && (
+          <div style={{ position: "absolute", top: "100%", left: 0, width: "100%", backgroundColor: "rgba(255, 255, 255, 0.98)", borderBottom: "1px solid rgba(23, 58, 87, 0.1)", padding: "16px 24px", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 10px 20px rgba(0,0,0,0.05)" }}>
+            <a href="#vorteile" onClick={handleLinkClick} style={{ color: "#173A57", fontWeight: 700, fontSize: "16px", textTransform: "uppercase", padding: "8px 0" }}>Vorteile</a>
+            <a href="#produkte" onClick={handleLinkClick} style={{ color: "#173A57", fontWeight: 700, fontSize: "16px", textTransform: "uppercase", padding: "8px 0" }}>Sortiment</a>
+            <a href="#wissen" onClick={handleLinkClick} style={{ color: "#173A57", fontWeight: 700, fontSize: "16px", textTransform: "uppercase", padding: "8px 0" }}>Wissenschaft</a>
+            <a href="#partner" onClick={handleLinkClick} style={{ color: "#173A57", fontWeight: 700, fontSize: "16px", textTransform: "uppercase", padding: "8px 0" }}>Partner</a>
+          </div>
+        )}
       </nav>
 
       {/* Mobile Menu Dropdown */}

@@ -178,7 +178,6 @@ button {
   font-size: 56px;
   font-weight: 700;
   line-height: 1.1;
-  color: var(--text-dark);
   margin-bottom: 24px;
 }
 
@@ -250,6 +249,7 @@ button {
   font-weight: 700;
   color: var(--text-light);
   margin-bottom: 16px;
+  line-height: 1.1;
 }
 
 .section-subtitle {
@@ -569,6 +569,17 @@ h1, h2, h3, h4, .section-title, .product-title {
   animation-delay: 1s;
 }
 
+.hero-title {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 32px;
+  color: #ffffff;
+  letter-spacing: -1px;
+}
+
+.section-padding { padding: 120px 0; }
+
 .mobile-menu-btn { display: none !important; }
 
 /* Mobile Optimizations */
@@ -576,8 +587,10 @@ h1, h2, h3, h4, .section-title, .product-title {
   .desktop-only { display: none !important; }
   .mobile-menu-btn { display: flex !important; }
 
-  .hero { padding: 140px 0 60px !important; }
-  .hero-title { font-size: 40px !important; }
+  .hero { padding: 180px 0 60px !important; }
+  .hero-title { font-size: 34px !important; }
+  .hero-badge { font-size: 14px !important; letter-spacing: 1px !important; padding: 6px 16px !important; margin-bottom: 24px !important; }
+  .section-title { font-size: 30px !important; line-height: 1.1 !important; }
   
   .boost-section { padding: 60px 0 !important; }
   .boost-container { gap: 60px !important; }
@@ -588,11 +601,42 @@ h1, h2, h3, h4, .section-title, .product-title {
   .awake-footer { font-size: 48px !important; }
   
   .stat-value { font-size: 32px !important; }
-  .section-padding { padding: 80px 0 !important; }
-
+  .section-padding { padding: 60px 0 !important; }
+  .reviews-grid { column-count: 2; }
+  
   /* Adjust badges on mobile to prevent overlapping out of bounds */
   .badge-koffein { top: -10% !important; left: -10% !important; width: 90px !important; }
   .badge-zucker { top: 5% !important; right: -15% !important; width: 85px !important; }
   .badge-h2 { bottom: 20% !important; left: -10% !important; width: 85px !important; }
   .badge-lemon { bottom: -5% !important; right: -15% !important; width: 90px !important; }
+}
+
+@media (max-width: 480px) {
+  .reviews-grid { column-count: 1; }
+}
+
+/* Base styles for reviews-grid */
+.reviews-grid {
+  column-count: 4;
+  column-gap: 30px;
+  padding-bottom: 40px;
+}
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .reviews-grid { column-count: 3; }
 }

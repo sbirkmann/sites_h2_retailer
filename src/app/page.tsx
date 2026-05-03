@@ -84,10 +84,10 @@ function PageContent() {
         <Bubbles />
         <div className="container" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "60px", position: "relative", zIndex: 1 }}>
           <div className="hero-content" style={{ flex: "1 1 500px" }}>
-            <div className="animate-fade-up" style={{ display: "inline-block", backgroundColor: "rgba(253, 242, 119, 0.15)", color: "#FDF277", padding: "8px 20px", borderRadius: "50px", fontWeight: "800", fontSize: "20px", letterSpacing: "2px", marginBottom: "32px", textTransform: "uppercase", border: "1px solid rgba(253, 242, 119, 0.3)" }}>
+            <div className="hero-badge animate-fade-up" style={{ display: "inline-block", backgroundColor: "rgba(253, 242, 119, 0.15)", color: "#FDF277", padding: "8px 20px", borderRadius: "50px", fontWeight: "800", fontSize: "20px", letterSpacing: "2px", marginBottom: "32px", textTransform: "uppercase", border: "1px solid rgba(253, 242, 119, 0.3)" }}>
               AWAKE Retailer Portal
             </div>
-            <h1 className="animate-fade-up delay-100" style={{ fontSize: "64px", fontWeight: "800", lineHeight: 1.1, marginBottom: "32px", color: "#ffffff", letterSpacing: "-1px" }}>
+            <h1 className="hero-title animate-fade-up delay-100">
               <span style={{ display: "inline-block", animation: "float 6s ease-in-out infinite" }}>
                 <span className="animate-text-shine-light" style={{ fontFamily: "IntroRust, sans-serif", fontSize: "110%", paddingRight: "4px" }}>AWAKE</span>
               </span> - Das innovativste<br/>Getränk für dein <span style={{ color: "#FDF277" }}>Sortiment.</span>
@@ -126,11 +126,11 @@ function PageContent() {
       </section>
 
       {/* STATS SECTION */}
-      <section style={{ backgroundColor: "#F0F4F8", padding: "60px 0", borderBottom: "1px solid rgba(23,58,87,0.05)" }}>
-        <div className="container" style={{ display: "flex", justifyContent: "space-around", flexWrap: "wrap", gap: "40px", textAlign: "center" }}>
+      <section className="stats-section" style={{ backgroundColor: "#F0F4F8", padding: "60px 0", borderBottom: "1px solid rgba(23,58,87,0.05)" }}>
+        <div className="container stats-grid">
           {[["3.000+","Zufriedene Kunden"],["11 ppm","Maximaler H₂-Gehalt"],["18 Monate","Stabile Haltbarkeit"],["200%","Mögliche Handelsmarge"]].map(([v,l],i)=>(
             <div key={i} className={`animate-fade-up delay-${i*100||''}`}>
-              <div style={{ fontSize: "42px", fontWeight: "900", color: "#173A57", marginBottom: "8px", lineHeight: 1 }}>{v}</div>
+              <div className="stat-value" style={{ fontSize: "42px", fontWeight: "900", color: "#173A57", marginBottom: "8px", lineHeight: 1 }}>{v}</div>
               <div style={{ color: "#173A57", opacity: 0.7, fontSize: "14px", textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: "800" }}>{l}</div>
             </div>
           ))}
@@ -142,7 +142,7 @@ function PageContent() {
         <div className="container">
           <div style={{ textAlign: "center", marginBottom: "80px" }}>
             <div className="animate-fade-up" style={{ color: "#173A57", opacity: 0.7, fontWeight: "700", fontSize: "14px", letterSpacing: "2px", marginBottom: "16px", textTransform: "uppercase" }}>Das AWAKE Hybrid-Modell</div>
-            <h2 className="section-title animate-fade-up delay-100" style={{ color: "#173A57", maxWidth: "800px", marginInline: "auto", fontSize: "48px", fontWeight: "800" }}>Zwei Einkommensströme. Maximaler Umsatz.</h2>
+            <h2 className="section-title animate-fade-up delay-100" style={{ color: "#173A57", maxWidth: "800px", marginInline: "auto", fontWeight: "800", hyphens: "auto", wordBreak: "break-word" }}>Zwei Einkommensströme. Maximaler Umsatz.</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "40px" }}>
             {[
@@ -248,7 +248,7 @@ function PageContent() {
       </section>
 
       {/* SCIENCE SECTION */}
-      <section id="wissen" style={{ padding: "120px 0", backgroundColor: "#F0F4F8" }}>
+      <section id="wissen" className="section-padding" style={{ backgroundColor: "#F0F4F8" }}>
         <div className="container">
           <div style={{ textAlign: "center", marginBottom: "80px" }}>
             <div className="animate-fade-up" style={{ color: "#173A57", opacity: 0.7, fontWeight: "700", fontSize: "21px", letterSpacing: "2px", marginBottom: "16px", textTransform: "uppercase" }}>Die Wissenschaft</div>
@@ -276,7 +276,7 @@ function PageContent() {
       </section>
 
       {/* REVIEWS SECTION */}
-      <section style={{ padding: "120px 0", backgroundColor: "#ffffff" }}>
+      <section className="section-padding" style={{ backgroundColor: "#ffffff" }}>
         <div className="container" style={{ maxWidth: "1400px" }}>
           <div style={{ textAlign: "center", marginBottom: "80px" }}>
             <div className="animate-fade-up" style={{ backgroundColor: "#173A57", color: "#ffffff", padding: "8px 20px", borderRadius: "50px", fontWeight: "700", fontSize: "14px", letterSpacing: "1px", marginBottom: "24px", textTransform: "uppercase", display: "inline-block" }}>Erfahrungsberichte</div>
@@ -285,7 +285,7 @@ function PageContent() {
               Über 3.000+ zufriedene Kunden vertrauen bereits auf die Kraft von AWAKE.
             </p>
           </div>
-          <div style={{ columnCount: 4, columnGap: "30px", paddingBottom: "40px" }}>
+          <div className="reviews-grid">
             {[
               { label: "GAME CHANGER", text: "Ich war zunächst skeptisch, aber ich bin unendlich froh, dass ich AWAKE bestellt habe. Seit ich AWAKE trinke, hat sich mein allgemeines Wohlbefinden deutlich verbessert.", author: "Sarah M.", initials: "SM", color: "#22C55E" },
               { label: "DOCTOR APPROVED", text: "Als Arzt bin ich von der wissenschaftlichen Basis überzeugt. 11+ PPM molekularer Wasserstoff ist beeindruckend. Ich habe AWAKE meinen Patienten empfohlen und die Rückmeldungen sind durchweg positiv. Die antioxidative Wirkung ist spürbar und der Geschmack stimmt auch.", author: "Dr. Martin B.", initials: "MB", color: "#10B981" },

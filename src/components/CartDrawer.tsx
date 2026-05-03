@@ -1,12 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "../lib/CartContext";
 import CheckoutModal from "./CheckoutModal";
 
 export default function CartDrawer() {
   const { items, totalItems, subtotal, totalDeposit, totalShipping, grandTotal, updateQuantity, removeItem, closeCart, isCartOpen } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  
+  useEffect(() => {
+    if (isCartOpen || checkoutOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isCartOpen, checkoutOpen]);
+
   const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
   return (

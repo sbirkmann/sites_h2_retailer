@@ -1,11 +1,24 @@
 "use client";
 
+import { useEffect } from "react";
+
 interface CalendlyModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export default function CalendlyModal({ isOpen, onClose }: CalendlyModalProps) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -29,7 +42,7 @@ export default function CalendlyModal({ isOpen, onClose }: CalendlyModalProps) {
         </div>
 
         {/* Right Side: CEO Profile */}
-        <div style={{ flex: '1', minWidth: '300px', backgroundColor: 'var(--bg-light)', padding: '40px 30px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div className="desktop-only" style={{ flex: '1', minWidth: '300px', backgroundColor: 'var(--bg-light)', padding: '40px 30px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
           <div style={{ width: '150px', height: '150px', borderRadius: '50%', overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', marginBottom: '24px' }}>
             <img src="https://h2-awake.de/events/julian-schneider.jpg" alt="Julian Schneider" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=Julian+Schneider&background=173A57&color=fff&size=150' }} />
           </div>
