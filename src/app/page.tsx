@@ -89,8 +89,8 @@ function PageContent() {
         <Bubbles />
 
         <div className="container" style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '40px' }}>
-          <div className="hero-content" style={{ flex: '1 1 500px', maxWidth: '600px', textAlign: 'left' }}>
-            <h1 className="animate-fade-up" style={{ fontSize: '64px', lineHeight: 1.1, marginBottom: '24px', color: 'var(--bg-dark)', fontWeight: 800 }}>
+          <div className="hero-content" style={{ flex: '1 1 300px', maxWidth: '600px', textAlign: 'left' }}>
+            <h1 className="hero-title animate-fade-up" style={{ fontSize: '64px', lineHeight: 1.1, marginBottom: '24px', color: 'var(--bg-dark)', fontWeight: 800 }}>
               ERLEBE DEN<br />
               <span className="animate-text-shine" style={{ display: 'inline-block', paddingRight: '10px', fontFamily: 'IntroRust', fontSize: '110%' }}>AWAKE</span><br />
               EFFEKT
@@ -111,17 +111,17 @@ function PageContent() {
             </div>
           </div>
           
-          <div className="hero-image-wrapper animate-float" style={{ flex: '1 1 400px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
+          <div className="hero-image-wrapper animate-float" style={{ flex: '1 1 300px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
             <img key={heroImages[heroImageIdx]} src={heroImages[heroImageIdx]} alt="AWAKE Produkt" style={{ width: '100%', height: 'auto', display: 'block', maxWidth: '600px', animation: 'fadeInImage 0.5s ease', mixBlendMode: 'multiply' }} />
           </div>
         </div>
       </section>
 
       {/* DEIN WASSERSTOFF BOOST SECTION */}
-      <section style={{ backgroundColor: 'var(--bg-dark)', color: '#fff', padding: '120px 0', position: 'relative', overflow: 'hidden' }}>
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '120px', flexWrap: 'wrap' }}>
+      <section className="boost-section" style={{ backgroundColor: 'var(--bg-dark)', color: '#fff', padding: '120px 0', position: 'relative', overflow: 'hidden' }}>
+        <div className="container boost-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '120px', flexWrap: 'wrap' }}>
           {/* Left Side: Image with badges */}
-          <div style={{ position: 'relative', flex: '1 1 400px', maxWidth: '450px', display: 'flex', justifyContent: 'center', minHeight: '500px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: '450px', display: 'flex', justifyContent: 'center', minHeight: '500px', alignItems: 'center' }}>
              
              {/* Background Smoke */}
              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '140%', zIndex: 1, pointerEvents: 'none', opacity: 0.9 }}>
@@ -134,45 +134,45 @@ function PageContent() {
              </div>
              
              {/* Badges as images */}
-             <div style={{ position: 'absolute', top: '5%', left: '0%', width: '120px', zIndex: 3 }}>
+             <div className="badge-koffein" style={{ position: 'absolute', top: '5%', left: '0%', width: '120px', zIndex: 3 }}>
                 <img className="animate-float" src="/images/badge-koffein.webp" alt="Ohne Koffein" style={{ width: '100%', animationDelay: '0.5s', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' }} />
              </div>
-             <div style={{ position: 'absolute', top: '15%', right: '-5%', width: '110px', zIndex: 3 }}>
+             <div className="badge-zucker" style={{ position: 'absolute', top: '15%', right: '-5%', width: '110px', zIndex: 3 }}>
                 <img className="animate-float" src="/images/badge-zucker.webp" alt="Ohne Zucker" style={{ width: '100%', animationDelay: '1.2s', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' }} />
              </div>
-             <div style={{ position: 'absolute', bottom: '25%', left: '-5%', width: '110px', zIndex: 3 }}>
+             <div className="badge-h2" style={{ position: 'absolute', bottom: '25%', left: '-5%', width: '110px', zIndex: 3 }}>
                 <img className="animate-float" src="/images/badge-h2.webp" alt="Max H2 Boost" style={{ width: '100%', animationDelay: '2.5s', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' }} />
              </div>
-             <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '120px', zIndex: 3 }}>
+             <div className="badge-lemon" style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '120px', zIndex: 3 }}>
                 <img className="animate-float" src="/images/badge-lemon.webp" alt="Frischer Lemon Kick" style={{ width: '100%', animationDelay: '1.8s', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))' }} />
              </div>
           </div>
 
           {/* Right Side: Text & Button */}
-          <div style={{ flex: '1 1 450px', maxWidth: '550px' }}>
+          <div style={{ flex: '1 1 300px', maxWidth: '550px' }}>
             <div style={{ display: 'inline-block', backgroundColor: 'var(--accent-yellow)', color: 'var(--bg-dark)', padding: '8px 20px', borderRadius: '50px', fontWeight: '900', fontSize: '12px', textTransform: 'uppercase', marginBottom: '24px', letterSpacing: '1px' }}>Wasserstoff-Power</div>
-            <h2 style={{ fontSize: '42px', marginBottom: '24px', fontWeight: 800, lineHeight: 1.1, letterSpacing: '0.5px' }}>DEIN WASSERSTOFF BOOST</h2>
+            <h2 className="boost-heading" style={{ fontSize: '42px', marginBottom: '24px', fontWeight: 800, lineHeight: 1.1, letterSpacing: '0.5px' }}>DEIN WASSERSTOFF BOOST</h2>
             <p style={{ opacity: 0.9, lineHeight: 1.7, marginBottom: '40px', fontSize: '17px' }}>
               Der Wasserstoffgehalt in handelsüblichem Wasserstoffwasser liegt oft zwischen 0,5 und 1,2 PPM. Mit unserer speziellen Technologie hält AWAKE mehr als 11 PPM pro Liter konstant und stabil - ein erfrischendes Getränk, das neue Maßstäbe setzt.
             </p>
-            <a href={`https://partners.h2-awake.de/create-account${refCode ? '?ref=' + refCode : ''}`} target="_blank" rel="noopener noreferrer" className="btn" style={{ backgroundColor: 'var(--accent-yellow)', color: 'var(--bg-dark)', padding: '18px 36px', borderRadius: '50px', fontWeight: '900', textTransform: 'uppercase', textDecoration: 'none', display: 'inline-block', letterSpacing: '1.5px', fontSize: '14px', boxShadow: '0 10px 25px rgba(253, 242, 119, 0.2)' }}>
+            <a href={`https://partners.h2-awake.de/create-account${refCode ? '?ref=' + refCode : ''}`} target="_blank" rel="noopener noreferrer" className="btn boost-btn" style={{ backgroundColor: 'var(--accent-yellow)', color: 'var(--bg-dark)', padding: '18px 36px', borderRadius: '50px', fontWeight: '900', textTransform: 'uppercase', textDecoration: 'none', display: 'inline-block', letterSpacing: '1.5px', fontSize: '14px', boxShadow: '0 10px 25px rgba(253, 242, 119, 0.2)' }}>
               PARTNERPROGRAMM ANMELDEN
             </a>
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '120px' }}>
-          <h3 style={{ fontFamily: 'IntroRust, sans-serif', fontSize: '64px', fontWeight: 'normal', marginBottom: '16px', letterSpacing: '2px', color: '#fff' }}>AWAKE</h3>
+        <div className="awake-footer-container" style={{ textAlign: 'center', marginTop: '120px' }}>
+          <h3 className="awake-footer" style={{ fontFamily: 'IntroRust, sans-serif', fontSize: '64px', fontWeight: 'normal', marginBottom: '16px', letterSpacing: '2px', color: '#fff' }}>AWAKE</h3>
           <p style={{ fontSize: '26px', opacity: 0.9, lineHeight: 1.4 }}>Natürlich. Innovativ.<br/>Belebend.</p>
         </div>
       </section>
 
       {/* STATS */}
-      <section style={{ backgroundColor: 'var(--bg-dark)', padding: '60px 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <section className="section-padding" style={{ backgroundColor: 'var(--bg-dark)', padding: '60px 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '40px', textAlign: 'center' }}>
           {[["1000+","Zufriedene B2B Kunden"],["50%","Wiederverkaufsrate"],["18 Monate","Stabile Haltbarkeit"],["200%","Mögliche Handelsmarge"]].map(([v,l],i)=>(
             <div key={i} className={`animate-fade-up delay-${i*100||''}`}>
-              <div style={{ fontSize: '42px', fontWeight: 'bold', color: 'var(--accent-yellow)', marginBottom: '8px', lineHeight: 1 }}>{v}</div>
+              <div className="stat-value" style={{ fontSize: '42px', fontWeight: 'bold', color: 'var(--accent-yellow)', marginBottom: '8px', lineHeight: 1 }}>{v}</div>
               <div style={{ color: 'var(--text-light)', opacity: 0.7, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 'bold' }}>{l}</div>
             </div>
           ))}

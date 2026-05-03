@@ -556,3 +556,25 @@ h1, h2, h3, h4, .section-title, .product-title {
   animation-delay: 1s;
 }
 
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .hero { padding: 100px 0 60px !important; }
+  .hero-title { font-size: 40px !important; }
+  
+  .boost-section { padding: 60px 0 !important; }
+  .boost-container { gap: 60px !important; }
+  .boost-heading { font-size: 32px !important; }
+  .boost-btn { padding: 16px 24px !important; font-size: 13px !important; width: 100%; text-align: center; }
+  
+  .awake-footer-container { margin-top: 60px !important; }
+  .awake-footer { font-size: 48px !important; }
+  
+  .stat-value { font-size: 32px !important; }
+  .section-padding { padding: 80px 0 !important; }
+
+  /* Adjust badges on mobile to prevent overlapping out of bounds */
+  .badge-koffein { top: -10% !important; left: -10% !important; width: 90px !important; }
+  .badge-zucker { top: 5% !important; right: -15% !important; width: 85px !important; }
+  .badge-h2 { bottom: 20% !important; left: -10% !important; width: 85px !important; }
+  .badge-lemon { bottom: -5% !important; right: -15% !important; width: 90px !important; }
+}
