@@ -60,12 +60,14 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
   const [city, setCity] = useState("");
   const [countryCode, setCountryCode] = useState("DE");
   const [refCode, setRefCode] = useState("");
+  const [refCodeIsPrefilled, setRefCodeIsPrefilled] = useState(false);
 
   // Initialize refCode from localStorage
   useEffect(() => {
     const storedRef = localStorage.getItem("refCode");
     if (storedRef) {
       setRefCode(storedRef);
+      setRefCodeIsPrefilled(true);
     }
   }, []);
 
@@ -80,23 +82,23 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
     fetchProducts(countryCode)
       .then((apiProducts) => {
         if (cancelled) return;
-        // Find max shipping cost among items in cart
-        let maxShipping = 0;
+        // Calculate total shipping cost
+        let sumShipping = 0;
         for (const cartItem of items) {
           const apiMatch = apiProducts.find(
             (ap) => ap.id === cartItem.product.id && ap.type === cartItem.product.type
           );
           if (apiMatch && apiMatch.shipping_cost != null) {
-            maxShipping = Math.max(maxShipping, apiMatch.shipping_cost);
+            sumShipping += apiMatch.shipping_cost * cartItem.quantity;
           }
         }
-        setShippingForCountry(maxShipping);
+        setShippingForCountry(sumShipping);
       })
       .catch(() => {
         if (!cancelled) {
           // Fallback to cart's static shipping
-          const maxStatic = items.reduce((max, i) => Math.max(max, i.product.shipping_cost ?? 0), 0);
-          setShippingForCountry(maxStatic);
+          const sumStatic = items.reduce((sum, i) => sum + (i.product.shipping_cost ?? 0) * i.quantity, 0);
+          setShippingForCountry(sumStatic);
         }
       })
       .finally(() => { if (!cancelled) setShippingLoading(false); });
@@ -105,9 +107,9 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
 
   // ─── VAT calculation ────────────────────────────────────────────────────
   const vatRate = VAT_RATES[countryCode]?.rate ?? 0.19;
-  const netTotal = subtotal + totalDeposit + shippingForCountry;
+  const netTotal = subtotal + shippingForCountry;
   const vatAmount = netTotal * vatRate;
-  const grossTotal = netTotal + vatAmount;
+  const grossTotal = netTotal + vatAmount + totalDeposit;
 
   // ─── Step 1: Send login code ────────────────────────────────────────────
   const handleSendCode = async () => {
@@ -267,7 +269,7 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
               </p>
               <div style={{ marginBottom: "20px" }}>
                 <label style={labelStyle}>Login-Code</label>
-                <input type="text" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} onKeyDown={(e) => e.key === "Enter" && handleVerifyCode()} placeholder="000000" maxLength={6} style={{ ...inputStyle, textAlign: "center", fontSize: "28px", letterSpacing: "8px", fontWeight: 700 }} autoFocus />
+                <input type="text" value={code} onChange={(e) => setCode(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6))} onKeyDown={(e) => e.key === "Enter" && handleVerifyCode()} placeholder="XXXXXX" maxLength={6} style={{ ...inputStyle, textAlign: "center", fontSize: "28px", letterSpacing: "8px", fontWeight: 700 }} autoFocus />
               </div>
               <div style={{ display: "flex", gap: "12px" }}>
                 <button className="btn btn-secondary" onClick={() => { setStep("email"); setError(""); }} style={{ flex: 1, padding: "14px" }}>Zurück</button>
@@ -327,7 +329,7 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
               </div>
               <div style={{ marginBottom: "24px" }}>
                 <label style={labelStyle}>Empfehlungscode (optional)</label>
-                <input type="text" value={refCode} onChange={(e) => setRefCode(e.target.value)} placeholder="z.B. PARTNER123" style={inputStyle} />
+                <input type="text" value={refCode} onChange={(e) => setRefCode(e.target.value)} readOnly={refCodeIsPrefilled} placeholder="z.B. PARTNER123" style={{ ...inputStyle, opacity: refCodeIsPrefilled ? 0.6 : 1, cursor: refCodeIsPrefilled ? "not-allowed" : "text", backgroundColor: refCodeIsPrefilled ? "#f8f9fa" : "#fff" }} />
               </div>
 
               <div style={{ display: "flex", gap: "12px" }}>

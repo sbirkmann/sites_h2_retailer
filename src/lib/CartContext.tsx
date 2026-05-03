@@ -90,9 +90,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     0
   );
 
-  // Shipping: highest shipping cost across all items (not summed)
+  // Shipping: sum of shipping cost * quantity for all items
   const totalShipping = items.reduce(
-    (max, i) => Math.max(max, i.product.shipping_cost ?? 0),
+    (sum, i) => sum + (i.product.shipping_cost ?? 0) * i.quantity,
     0
   );
 
