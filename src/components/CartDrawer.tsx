@@ -83,9 +83,13 @@ export default function CartDrawer() {
         {/* Footer */}
         {items.length > 0 && (
           <div style={{ padding: "20px 24px", borderTop: "1px solid rgba(23,58,87,0.08)", backgroundColor: "#fff" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", opacity: 0.7 }}><span>Zwischensumme (netto)</span><span>{fmt(subtotal)}</span></div>
-            {totalDeposit > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", opacity: 0.7 }}><span>Pfand (steuerfrei)</span><span>{fmt(totalDeposit)}</span></div>}
-            {totalShipping > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", opacity: 0.7 }}><span>Versand (geschätzt)</span><span>{fmt(totalShipping)}</span></div>}
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", opacity: 0.7 }}><span>Produkte (netto)</span><span>{fmt(subtotal)}</span></div>
+            {totalShipping > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", opacity: 0.7 }}><span>Versand (Deutschland)</span><span>{fmt(totalShipping)}</span></div>}
+            
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed rgba(23,58,87,0.1)", fontSize: "15px", fontWeight: 700 }}><span>Zwischensumme (netto)</span><span>{fmt(subtotal + totalShipping)}</span></div>
+            
+            {totalDeposit > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", fontSize: "14px", opacity: 0.7 }}><span>Pfand (steuerfrei)</span><span>{fmt(totalDeposit)}</span></div>}
+            
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(23,58,87,0.08)", fontSize: "20px", fontWeight: 800 }}><span>Gesamt (netto)</span><span>{fmt(grandTotal)}</span></div>
             <button className="btn" onClick={() => { closeCart(); setCheckoutOpen(true); }} style={{ width: "100%", marginTop: "24px", padding: "18px", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
               Zur Kasse

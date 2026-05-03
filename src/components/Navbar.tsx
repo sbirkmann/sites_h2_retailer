@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "../lib/CartContext";
 
 export default function Navbar() {
   const { totalItems, toggleCart } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleLinkClick = () => {
     setIsMenuOpen(false);
@@ -15,7 +24,7 @@ export default function Navbar() {
   return (
     <div style={{ position: "fixed", top: 0, left: 0, width: "100%", zIndex: 100 }}>
       {/* Top Announcement Bar */}
-      <div style={{ backgroundColor: "#FDF277", color: "#173A57", textAlign: "center", padding: "8px", fontSize: "12px", fontWeight: "800", letterSpacing: "1px", textTransform: "uppercase" }}>
+      <div style={{ backgroundColor: "#FDF277", color: "#173A57", textAlign: "center", fontSize: "12px", fontWeight: "800", letterSpacing: "1px", textTransform: "uppercase", maxHeight: isScrolled ? "0px" : "60px", padding: isScrolled ? "0 8px" : "8px", opacity: isScrolled ? 0 : 1, overflow: "hidden", transition: "all 0.3s ease" }}>
         EXKLUSIVE B2B-KONDITIONEN | 20% LIFETIME AFFILIATE PROVISION
       </div>
       
