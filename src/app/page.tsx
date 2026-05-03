@@ -18,6 +18,7 @@ function PageContent() {
   const [isCalendlyModalOpen, setIsCalendlyModalOpen] = useState(false);
   const [apiProducts, setApiProducts] = useState<ApiProduct[]>([]);
   const [refCode, setRefCode] = useState("");
+  const [heroImageIndex, setHeroImageIndex] = useState(0);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -35,12 +36,19 @@ function PageContent() {
 
     fetchProducts("DE").then(setApiProducts).catch(() => {});
 
+    const interval = setInterval(() => {
+      setHeroImageIndex(prev => (prev + 1) % 2);
+    }, 4000);
+
     const obs = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('is-visible'); });
     }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
     document.querySelectorAll('.animate-fade-up').forEach(el => obs.observe(el));
     
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+      clearInterval(interval);
+    };
   }, []);
 
   const products = useMemo(() => {
@@ -80,7 +88,9 @@ function PageContent() {
               AWAKE Retailer Portal
             </div>
             <h1 className="animate-fade-up delay-100" style={{ fontSize: "64px", fontWeight: "800", lineHeight: 1.1, marginBottom: "32px", color: "#ffffff", letterSpacing: "-1px" }}>
-              <span style={{ fontFamily: "IntroRust, sans-serif", fontSize: "110%", color: "#FDF277", display: "inline-block", animation: "float 6s ease-in-out infinite" }}>AWAKE</span> - Das innovativste<br/>Getränk für dein <span style={{ color: "#FDF277" }}>Sortiment.</span>
+              <span style={{ display: "inline-block", animation: "float 6s ease-in-out infinite" }}>
+                <span className="animate-text-shine-light" style={{ fontFamily: "IntroRust, sans-serif", fontSize: "110%", paddingRight: "4px" }}>AWAKE</span>
+              </span> - Das innovativste<br/>Getränk für dein <span style={{ color: "#FDF277" }}>Sortiment.</span>
             </h1>
             <p className="animate-fade-up delay-200" style={{ fontSize: "20px", color: "rgba(255,255,255,0.8)", marginBottom: "48px", maxWidth: "600px", lineHeight: 1.6 }}>
               Werde exklusiver AWAKE Retailer. Erweitere dein Angebot um hochdosiertes Wasserstoffwasser, erziele hohe Margen vor Ort und profitiere langfristig von unserem Affiliate-Modell.
@@ -93,9 +103,9 @@ function PageContent() {
           <div className="hero-image-wrapper animate-float" style={{ flex: "1 1 400px", display: "flex", justifyContent: "center", position: "relative", minHeight: "550px", alignItems: "center", maxWidth: "100%" }}>
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "100%", maxWidth: "600px", height: "600px", background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%)", borderRadius: "50%", zIndex: 1 }}></div>
 
-            <div style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "flex-end", gap: "20px" }}>
-              <img src="https://subbly-production-builder.nyc3.cdn.digitaloceanspaces.com/projects/01KKKA91702C19QGM77B03DASV/uploads/e0404161-0015-4ed3-8eff-8f97c005a472-awake-bottle.png" alt="AWAKE Flasche" style={{ width: "140px", height: "auto", objectFit: "contain", filter: "drop-shadow(0 30px 40px rgba(0,0,0,0.4))", marginBottom: "20px" }} />
-              <img src="/hero.png" alt="AWAKE Dose" style={{ width: "280px", height: "auto", objectFit: "contain", filter: "drop-shadow(0 40px 60px rgba(0,0,0,0.5))", position: "relative", zIndex: 3 }} />
+            <div style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "450px" }}>
+              <img src="/images/hero-slide-1.webp" alt="AWAKE Dose" className="hero-can" style={{ position: "absolute", height: "400px", width: "auto", objectFit: "contain", filter: "drop-shadow(0 40px 60px rgba(0,0,0,0.5))", zIndex: 3, opacity: heroImageIndex === 0 ? 1 : 0, transition: "opacity 1.5s ease-in-out" }} />
+              <img src="/images/awake-bottle.png" alt="AWAKE Flasche" className="hero-bottle" style={{ position: "absolute", height: "400px", width: "auto", objectFit: "contain", filter: "drop-shadow(0 30px 40px rgba(0,0,0,0.4))", zIndex: 3, opacity: heroImageIndex === 1 ? 1 : 0, transition: "opacity 1.5s ease-in-out" }} />
             </div>
 
             <div className="animate-fade-up delay-200" style={{ position: "absolute", top: "15%", left: "20px", backgroundColor: "#ffffff", width: "120px", height: "120px", borderRadius: "50%", zIndex: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "0 20px 40px rgba(0,0,0,0.3)", border: "4px solid #ffffff", padding: "5px" }}>
