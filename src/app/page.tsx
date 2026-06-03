@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Star, Check, Stethoscope, Award, Shield, Truck, Sparkles, Flame, Plus, ChevronDown } from "lucide-react";
+import { Star, Check, Stethoscope, Award, Shield, Truck, Plus, ChevronDown, X } from "lucide-react";
 import Navbar from "../components/Navbar";
 import CartDrawer from "../components/CartDrawer";
 import ContactWidget from "../components/ContactWidget";
@@ -12,7 +12,11 @@ import Footer from "../components/Footer";
 import { CartProvider, useCart } from "../lib/CartContext";
 import { STATIC_PRODUCTS, type DisplayProduct } from "../lib/products";
 import { fetchProducts, type ApiProduct } from "../lib/api";
-import { TextReveal, FadeUp, BlurIn, GlowButton, FloatingElement } from "../components/home/animations";
+import { TextReveal, FadeUp, BlurIn, GlowButton, FloatingElement } from "@/components/home/animations";
+import { reviews } from "@/components/reviews/reviews-data";
+import { ReviewCard } from "@/components/reviews/reviews-content";
+import { SectionBadge } from "@/components/shared/section-badge";
+
 
 // ==========================================================================
 // HERO SECTION COMPONENT HELPERS (PORTED FROM B2C HERO SECTION)
@@ -266,7 +270,7 @@ function WaterRipples() {
 
 // ==========================================================================
 // MAIN PAGE COMPONENT
-// ==========================================================================
+// =====================================================================================================================================
 
 function PageContent() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -276,22 +280,23 @@ function PageContent() {
   const [apiProducts, setApiProducts] = useState<ApiProduct[]>([]);
   const [refCode, setRefCode] = useState("");
   const [heroImageIndex, setHeroImageIndex] = useState(0);
+  const [showAllDesktopReviews, setShowAllDesktopReviews] = useState(false);
   const { addItem } = useCart();
 
   const particles = useMemo(() => generateParticles(8), []);
   const bubbles = useMemo(() => generateBubbles(15), []);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => setMounted(true), 50);
 
     const params = new URLSearchParams(window.location.search);
     const refParam = params.get("ref");
     if (refParam) {
       localStorage.setItem("refCode", refParam);
-      setRefCode(refParam);
+      setTimeout(() => setRefCode(refParam), 0);
     } else {
       const storedRef = localStorage.getItem("refCode");
-      if (storedRef) setRefCode(storedRef);
+      if (storedRef) setTimeout(() => setRefCode(storedRef), 0);
     }
 
     fetchProducts("DE").then(setApiProducts).catch(() => {});
@@ -301,6 +306,7 @@ function PageContent() {
     }, 4000);
 
     return () => {
+      clearTimeout(timer);
       clearInterval(interval);
     };
   }, []);
@@ -344,6 +350,20 @@ function PageContent() {
     },
   ];
 
+  const DESKTOP_INITIAL_COUNT = 8;
+  const mobileReviews = useMemo(() => {
+    return reviews.filter((review) => {
+      const wordCount = review.text.trim().split(/\s+/).length;
+      return wordCount >= 15 && wordCount <= 30;
+    });
+  }, []);
+
+  const visibleDesktopReviews = showAllDesktopReviews
+    ? reviews
+    : reviews.slice(0, DESKTOP_INITIAL_COUNT);
+  
+  const hasMoreDesktopReviews = reviews.length > DESKTOP_INITIAL_COUNT;
+
   return (
     <>
       <OfferModal isOpen={isOfferModalOpen} onClose={() => setIsOfferModalOpen(false)} />
@@ -357,7 +377,7 @@ function PageContent() {
           color: "#173A57",
           overflowX: "clip",
         }}
-        className="font-sans antialiased"
+        className="homenew-page min-h-screen bg-white font-gothic antialiased"
       >
         <Navbar />
         <CartDrawer />
@@ -526,11 +546,11 @@ function PageContent() {
             ========================================================================== */}
         <section id="vorteile" className="py-20 md:py-28 bg-[#F8FAFC]">
           <div className="max-w-[1350px] mx-auto px-6">
-            <div className="text-center mb-16">
-              <span className="text-[#173A57]/60 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.2em] block mb-3">
+            <div className="flex flex-col items-center text-center mb-16">
+              <span className="inline-flex w-fit items-center rounded-full font-bold uppercase text-[14px] sm:text-[16px] px-4 py-1.5 bg-[#FDF277] text-[#173A57] mb-5 font-gothic tracking-wide">
                 Das AWAKE Hybrid-Modell
               </span>
-              <h2 className="text-[#173A57] text-[34px] sm:text-[44px] font-extrabold tracking-tight max-w-2xl mx-auto uppercase">
+              <h2 className="font-gothic text-[26px] font-bold uppercase leading-tight text-[#173A57] sm:text-[34px] lg:text-[42px] max-w-2xl mx-auto">
                 Zwei Einkommensströme. Maximaler Umsatz.
               </h2>
             </div>
@@ -590,14 +610,14 @@ function PageContent() {
             ========================================================================== */}
         <section className="bg-[#173A57] text-white py-20 md:py-28">
           <div className="max-w-[1350px] mx-auto px-6">
-            <div className="text-center mb-16">
-              <span className="text-[#FDF277] text-[13px] font-bold uppercase tracking-[0.2em] block mb-3">
+            <div className="flex flex-col items-center text-center mb-16">
+              <span className="inline-flex w-fit items-center rounded-full font-bold uppercase text-[14px] sm:text-[16px] px-4 py-1.5 bg-[#FDF277] text-[#173A57] mb-5 font-gothic tracking-wide">
                 Wettbewerbsvorteil
               </span>
-              <h2 className="text-[34px] sm:text-[44px] font-extrabold tracking-tight max-w-xl mx-auto uppercase">
+              <h2 className="font-gothic text-[26px] font-bold uppercase leading-tight text-white sm:text-[34px] lg:text-[42px] max-w-xl mx-auto">
                 Was AWAKE ausmacht
               </h2>
-              <p className="text-white/70 font-gothic text-[16px] sm:text-[18px] max-w-xl mx-auto mt-4 leading-relaxed">
+              <p className="homenew-subheading text-white/70 font-gothic text-[14px] leading-relaxed sm:text-[16px] max-w-xl mx-auto mt-4">
                 8 zentrale Säulen, die Qualität, Innovation und Alltag miteinander verbinden – und deine Kunden im Regal überzeugen werden.
               </p>
             </div>
@@ -661,14 +681,14 @@ function PageContent() {
             ========================================================================== */}
         <section id="produkte" className="py-20 md:py-28 bg-white">
           <div className="max-w-[1350px] mx-auto px-6">
-            <div className="text-center mb-16">
-              <span className="text-[#173A57]/60 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.2em] block mb-3">
+            <div className="flex flex-col items-center text-center mb-16">
+              <span className="inline-flex w-fit items-center rounded-full font-bold uppercase text-[14px] sm:text-[16px] px-4 py-1.5 bg-[#FDF277] text-[#173A57] mb-5 font-gothic tracking-wide">
                 Bestellung
               </span>
-              <h2 className="text-[#173A57] text-[34px] sm:text-[44px] font-extrabold tracking-tight uppercase">
+              <h2 className="font-gothic text-[26px] font-bold uppercase leading-tight text-[#173A57] sm:text-[34px] lg:text-[42px]">
                 B2B Sortiment & Gebinde
               </h2>
-              <p className="text-[#173A57]/70 font-gothic text-[16px] sm:text-[18px] max-w-xl mx-auto mt-4 leading-relaxed">
+              <p className="homenew-subheading text-[#173A57]/70 font-gothic text-[14px] leading-relaxed sm:text-[16px] max-w-xl mx-auto mt-4">
                 Wähle die passenden Gebindegrößen für dein Geschäft. Alle Preise verstehen sich als Nettopreise exkl. Pfand.
               </p>
             </div>
@@ -778,11 +798,11 @@ function PageContent() {
             ========================================================================== */}
         <section id="wissen" className="py-20 md:py-28 bg-[#F8FAFC]">
           <div className="max-w-[1350px] mx-auto px-6">
-            <div className="text-center mb-16">
-              <span className="text-[#173A57]/60 text-[12px] sm:text-[13px] font-bold uppercase tracking-[0.2em] block mb-3">
+            <div className="flex flex-col items-center text-center mb-16">
+              <span className="inline-flex w-fit items-center rounded-full font-bold uppercase text-[14px] sm:text-[16px] px-4 py-1.5 bg-[#FDF277] text-[#173A57] mb-5 font-gothic tracking-wide">
                 Die Wissenschaft
               </span>
-              <h2 className="text-[#173A57] text-[34px] sm:text-[44px] font-extrabold tracking-tight max-w-2xl mx-auto uppercase">
+              <h2 className="font-gothic text-[26px] font-bold uppercase leading-tight text-[#173A57] sm:text-[34px] lg:text-[42px] max-w-2xl mx-auto">
                 Ein kleines Molekül mit großer Wirkung
               </h2>
             </div>
@@ -836,131 +856,72 @@ function PageContent() {
         </section>
 
         {/* ==========================================================================
-            7. REVIEWS SECTION (B2C MASONRY LAYOUT)
+            7. REVIEWS SECTION (B2C MASONRY LAYOUT 1:1 PORTED)
             ========================================================================== */}
-        <section className="py-20 md:py-28 bg-white border-b border-border/20">
-          <div className="max-w-[1350px] mx-auto px-6">
-            <div className="text-center mb-16">
-              <span className="inline-block bg-[#173A57] text-white text-[10px] font-bold uppercase tracking-[0.15em] px-4 py-1.5 rounded-full mb-4">
-                Erfahrungsberichte
-              </span>
-              <h2 className="text-[#173A57] text-[34px] sm:text-[44px] font-extrabold tracking-tight uppercase">
+        <section id="erfahrungsberichte" className="py-14 sm:py-18 lg:py-22 text-base font-normal leading-none bg-white rounded-none border-b border-border/25">
+          <div className="mx-auto max-w-[1350px] px-4 lg:px-8 mb-10 sm:mb-14">
+            <div className="text-center">
+              <SectionBadge variant="navy" className="mb-4 sm:mb-6">
+                ERFAHRUNGSBERICHTE
+              </SectionBadge>
+              <h2 className="font-gothic text-[24px] font-bold text-navy mb-4 sm:text-[30px] lg:text-[36px] uppercase">
                 Das sagen unsere Kunden
               </h2>
-              <p className="text-[#173A57]/60 font-gothic text-[16px] sm:text-[18px] max-w-xl mx-auto mt-3 leading-relaxed">
+              <p className="font-gothic text-navy/60 max-w-lg font-normal text-[14px] rounded-none mx-auto">
                 Über 3.000+ zufriedene Kunden vertrauen bereits auf die Kraft von AWAKE.
               </p>
             </div>
+          </div>
 
-            <div className="reviews-grid">
-              {[
-                {
-                  label: "GAME CHANGER",
-                  text: "Ich war zunächst skeptisch, aber ich bin unendlich froh, dass ich AWAKE bestellt habe. Seit ich AWAKE trinke, hat sich mein allgemeines Wohlbefinden deutlich verbessert.",
-                  author: "Sarah M.",
-                  initials: "SM",
-                  color: "#22C55E",
-                },
-                {
-                  label: "DOCTOR APPROVED",
-                  text: "Als Arzt bin ich von der wissenschaftlichen Basis überzeugt. 11+ PPM molekularer Wasserstoff ist beeindruckend. Ich habe AWAKE meinen Patienten empfohlen und die Rückmeldungen sind durchweg positiv. Die antioxidative Wirkung ist spürbar und der Geschmack stimmt auch.",
-                  author: "Dr. Martin B.",
-                  initials: "MB",
-                  color: "#10B981",
-                },
-                {
-                  label: "ENERGY & FOCUS",
-                  text: "Das einzige Getränk, das mich spürbar besser fühlen lässt - und das täglich. Ich habe vor etwa zwei Monaten angefangen und definitiv einen Anstieg an Energie und Fokus bemerkt. Es schmeckt auch großartig. Ich habe es bereits mehreren Freunden empfohlen und kann es kaum erwarten, die Glasflasche als nächstes zu probieren!",
-                  author: "Thomas K.",
-                  initials: "TK",
-                  color: "#059669",
-                },
-                {
-                  label: "IMMEDIATE RESULTS",
-                  text: "Seit 10 Monaten dabei – das erste Getränk, das tatsächlich wirkt und bei dem man sofortige Ergebnisse sieht. Mein Energielevel ist konstant hoch und der Nachmittags-Crash ist komplett verschwunden.",
-                  author: "Anna S.",
-                  initials: "AS",
-                  color: "#34D399",
-                },
-                {
-                  label: "WHOLE FAMILY",
-                  text: "Ich wollte schon lange das ultimative Erlebnis durch Nahrungsergänzung erleben. Ich war frustriert, weil ich mehrere Produkte benutzte und oft vergaß, sie einzunehmen. Mein Blähbauch hat sich deutlich verringert. Ich bemerke auch den Unterschied bei meiner Haut. Ich habe meinem Vater ebenfalls ein Abo geholt und er möchte unbedingt weitermachen.",
-                  author: "Lisa W.",
-                  initials: "LW",
-                  color: "#10B981",
-                },
-                {
-                  label: "REGENERATION",
-                  text: "Mein Trainingspensum hat sich verbessert. Nicht auf eine unnatürliche Art, sondern eine nachhaltige Steigerung der Leistungsfähigkeit. Die Regeneration nach dem Sport ist deutlich besser geworden.",
-                  author: "Michael R.",
-                  initials: "MR",
-                  color: "#059669",
-                },
-                {
-                  label: "TRAVEL FRIENDLY",
-                  text: "Schmeckt gut und lässt sich einfach pur oder im Smoothie trinken. Auch super einfach für unterwegs, da die Dosen überall hinpassen.",
-                  author: "Henrik P.",
-                  initials: "HP",
-                  color: "#34D399",
-                },
-                {
-                  label: "PREMIUM QUALITY",
-                  text: "Ich trinke AWAKE jetzt seit 60 Tagen und bin wirklich zufrieden mit den Ergebnissen. Der Geschmack ist großartig, die Qualität fühlt sich premium an und die Balance ist perfekt für den täglichen Gebrauch. Was wirklich hervorsticht, ist der Kundenservice.",
-                  author: "Julia F.",
-                  initials: "JF",
-                  color: "#10B981",
-                },
-                {
-                  label: "CLEAR MIND",
-                  text: "Der Fokus beim Arbeiten am Laptop ist spürbar klarer. Ich ersetze mittlerweile meinen Nachmittagskaffee komplett durch eine Dose AWAKE. Kein Zittern, einfach nur klare Energie.",
-                  author: "Markus T.",
-                  initials: "MT",
-                  color: "#059669",
-                },
-                {
-                  label: "GYM FAVORITE",
-                  text: "Meine Kunden im Studio greifen immer öfter zu AWAKE. Die Dose sieht nicht nur extrem hochwertig aus, sondern das Produkt hält, was es verspricht. Eine absolute Bereicherung für unser Sortiment.",
-                  author: "Elena V.",
-                  initials: "EV",
-                  color: "#22C55E",
-                },
-              ].map((review, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white border border-border/60 rounded-2xl p-6 sm:p-8 mb-6 break-inside-avoid shadow-[0_4px_20px_rgba(23,58,87,0.02)] flex flex-col"
-                >
-                  <div className="flex gap-0.5 mb-4">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <div
-                        key={star}
-                        className="w-5.5 h-5.5 bg-[#10B981] rounded flex items-center justify-center"
-                      >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="#ffffff">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="inline-block border border-[#173A57]/20 text-[#173A57] text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full w-max mb-5">
-                    {review.label}
-                  </div>
-
-                  <p className="text-[#173A57] font-gothic text-[14px] leading-relaxed mb-6 italic opacity-85">
-                    "{review.text}"
-                  </p>
-
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12px] font-bold"
-                      style={{ backgroundColor: review.color }}
-                    >
-                      {review.initials}
-                    </div>
-                    <div className="text-[#173A57] font-bold text-[14px] font-gothic">{review.author}</div>
-                  </div>
+          <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
+            {/* Mobile Snap Carousel */}
+            <div className="sm:hidden flex overflow-x-auto gap-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 pb-6">
+              {mobileReviews.map((review) => (
+                <div key={review.name} className="snap-start shrink-0 w-[88%]">
+                  <ReviewCard review={review} />
                 </div>
               ))}
+            </div>
+
+            {/* Desktop Masonry Grid */}
+            <div className="hidden sm:block">
+              <div className="columns-2 lg:columns-4 gap-5">
+                {visibleDesktopReviews.map((review) => (
+                  <ReviewCard key={review.name} review={review} />
+                ))}
+              </div>
+
+              {/* Show More / Show Less Controls */}
+              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                {hasMoreDesktopReviews && (
+                  showAllDesktopReviews ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllDesktopReviews(false)}
+                      className="cursor-pointer inline-flex items-center justify-center gap-2 bg-[#173A57] text-white font-bold text-[14px] px-8 py-3.5 rounded-full transition-opacity hover:opacity-90 font-gothic uppercase tracking-wider"
+                    >
+                      <X className="w-4 h-4" aria-hidden="true" />
+                      Weniger anzeigen
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllDesktopReviews(true)}
+                      className="cursor-pointer inline-flex items-center justify-center bg-[#173A57] text-white font-bold text-[14px] px-8 py-3.5 rounded-full transition-opacity hover:opacity-90 font-gothic uppercase tracking-wider"
+                    >
+                      Mehr anzeigen
+                    </button>
+                  )
+                )}
+                {showAllDesktopReviews && (
+                  <a
+                    href="/erfahrungsberichte"
+                    className="cursor-pointer inline-flex items-center justify-center border-2 border-[#173A57] text-[#173A57] font-bold text-[14px] px-8 py-3 rounded-full transition-colors hover:bg-[#173A57] hover:text-white font-gothic uppercase tracking-wider"
+                  >
+                    Alle Erfahrungen lesen
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -972,18 +933,18 @@ function PageContent() {
           <div className="max-w-[1350px] mx-auto px-6">
             <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-12 items-center">
               
-              <div>
-                <span className="text-[#FDF277] text-[13px] font-bold uppercase tracking-[0.2em] block mb-3">
+              <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+                <span className="inline-flex w-fit items-center rounded-full font-bold uppercase text-[14px] sm:text-[16px] px-4 py-1.5 bg-[#FDF277] text-[#173A57] mb-5 font-gothic tracking-wide">
                   Skalierung ohne Risiko
                 </span>
-                <h2 className="text-[34px] sm:text-[44px] font-extrabold tracking-tight mb-5 font-gothic uppercase">
+                <h2 className="font-gothic text-[26px] font-bold uppercase leading-tight text-white sm:text-[34px] lg:text-[42px] mb-5">
                   Das Affiliate-Modell
                 </h2>
-                <p className="text-white/80 font-gothic text-[16px] sm:text-[18px] leading-relaxed mb-8 max-w-xl">
+                <p className="homenew-subheading text-white/80 font-gothic text-[14px] leading-relaxed sm:text-[16px] mb-8 max-w-xl">
                   Nutze deine Reichweite. Empfehle AWAKE an deine Händler-Kunden und verdiene an jeder ihrer Online-Bestellungen passiv mit. Dauerhaft.
                 </p>
 
-                <ul className="space-y-4 font-gothic text-[15px] sm:text-[16px]">
+                <ul className="space-y-4 font-gothic text-[15px] sm:text-[16px] text-left">
                   {[
                     "Individueller Affiliate-Link & QR-Codes für dein Geschäft",
                     "20% Lifetime-Vergütung (inklusive aller Folgekäufe)",
@@ -1031,8 +992,11 @@ function PageContent() {
             ========================================================================== */}
         <section id="faq" className="py-20 md:py-28 bg-white">
           <div className="max-w-[800px] mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-[#173A57] text-[34px] sm:text-[44px] font-extrabold tracking-tight uppercase">
+            <div className="flex flex-col items-center text-center mb-12">
+              <span className="inline-flex w-fit items-center rounded-full font-bold uppercase text-[14px] sm:text-[16px] px-4 py-1.5 bg-[#FDF277] text-[#173A57] mb-5 font-gothic tracking-wide">
+                FAQ
+              </span>
+              <h2 className="font-gothic text-[26px] font-bold uppercase leading-tight text-[#173A57] sm:text-[34px] lg:text-[42px]">
                 Häufige Fragen (B2B)
               </h2>
             </div>
