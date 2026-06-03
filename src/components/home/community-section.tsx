@@ -71,7 +71,7 @@ export function CommunitySection() {
             </SectionBadge>
           </BlurIn>
           <TextReveal>
-            <h2 className="font-gothic text-[24px] font-bold text-[#173A57] mb-4 sm:text-[30px] lg:text-[36px] uppercase">
+            <h2 className="font-gothic text-[24px] font-bold text-[#173A57] mb-4 sm:text-[30px] lg:text-[36px]">
               TAUSENDE VERTRAUEN AUF AWAKE
             </h2>
           </TextReveal>

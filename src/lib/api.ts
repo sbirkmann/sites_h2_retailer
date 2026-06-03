@@ -2,13 +2,29 @@ const API_BASE = "https://h2vitaldash.x900.3az.de/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
+export interface ProductTier {
+  min: number;        // Mindestmenge Kartons (inkl.)
+  max: number | null; // Maximalmenge Kartons (inkl.), null = unbegrenzt
+  price: number;      // Preis pro Karton (netto)
+}
+
 export interface ApiProduct {
   type: "product" | "bundle";
   id: number;
+  slug: string;
   name: string;
-  retailer_price: number;
-  deposit: number;
+  retailer_price: number;   // Basispreis pro Karton (netto)
+  deposit: number;          // Pfand pro Karton
   shipping_cost: number | null;
+  // ── Reichhaltige Produktdaten (von API) ──────────────────────────────────
+  subtitle?: string;
+  description?: string;
+  image?: string;
+  units_per_item?: number;  // Einheiten pro Karton (z.B. 30 Dosen)
+  benefits?: string[];
+  use_cases?: string[];
+  targets?: string[];
+  tiers?: ProductTier[];    // Staffelpreise (price = pro Karton)
 }
 
 export interface CustomerAddress {

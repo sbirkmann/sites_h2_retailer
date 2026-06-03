@@ -7,7 +7,7 @@ import type { DisplayProduct } from "./products";
 
 export interface CartItem {
   product: DisplayProduct;
-  quantity: number;
+  quantity: number; // Anzahl Kartons
 }
 
 // ─── Context Value ──────────────────────────────────────────────────────────
@@ -37,6 +37,37 @@ export function useCart() {
   return ctx;
 }
 
+// ─── Tier Price Helper ───────────────────────────────────────────────────────
+
+/**
+ * Ermittelt den Preis pro Karton anhand der Staffelpreise des Produkts.
+ * @returns Preis pro Karton oder 0 (Fallback: retailer_price)
+ */
+function getTierPrice(product: DisplayProduct, qty: number): number {
+  const tiers = product.tiers;
+  if (tiers && tiers.length > 0) {
+    const tier = tiers.find(
+      (t) => qty >= t.min && (t.max === null || qty <= t.max)
+    );
+    if (tier) return tier.price;
+  }
+  // Legacy slug-basierte Tiers als Fallback
+  const slug = product.slug;
+  if (slug === "dose-tray") {
+    const p = qty >= 20 ? 1.25 : qty >= 10 ? 1.35 : 1.45;
+    return parseFloat((p * 30).toFixed(2));
+  }
+  if (slug === "flasche-kiste") {
+    const p = qty >= 20 ? 1.2 : qty >= 10 ? 1.3 : 1.4;
+    return parseFloat((p * 24).toFixed(2));
+  }
+  if (slug.startsWith("quetsch")) {
+    const p = qty >= 10 ? 1.0 : qty >= 5 ? 1.2 : 1.35;
+    return parseFloat((p * 50).toFixed(2));
+  }
+  return 0;
+}
+
 // ─── Provider ───────────────────────────────────────────────────────────────
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -47,13 +78,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => {
       const existing = prev.find((i) => i.product.slug === product.slug);
       if (existing) {
+        const newQty = existing.quantity + qty;
+        const tierPrice = getTierPrice(product, newQty) || product.retailer_price;
         return prev.map((i) =>
           i.product.slug === product.slug
-            ? { ...i, quantity: i.quantity + qty }
+            ? { ...i, quantity: newQty, product: { ...i.product, retailer_price: tierPrice } }
             : i
         );
       }
-      return [...prev, { product, quantity: qty }];
+      const tierPrice = getTierPrice(product, qty) || product.retailer_price;
+      return [...prev, { product: { ...product, retailer_price: tierPrice }, quantity: qty }];
     });
     setIsCartOpen(true);
   }, []);
@@ -68,9 +102,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
     setItems((prev) =>
-      prev.map((i) =>
-        i.product.slug === slug ? { ...i, quantity: qty } : i
-      )
+      prev.map((i) => {
+        if (i.product.slug === slug) {
+          const tierPrice = getTierPrice(i.product, qty) || i.product.retailer_price;
+          return { ...i, quantity: qty, product: { ...i.product, retailer_price: tierPrice } };
+        }
+        return i;
+      })
     );
   }, []);
 
@@ -80,17 +118,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
 
+  // subtotal = Summe (Preis pro Karton × Anzahl Kartons)
   const subtotal = items.reduce(
     (sum, i) => sum + i.product.retailer_price * i.quantity,
     0
   );
 
+  // totalDeposit = Pfand pro Karton × Anzahl Kartons
   const totalDeposit = items.reduce(
     (sum, i) => sum + i.product.deposit * i.quantity,
     0
   );
 
-  // Shipping: sum of shipping cost * quantity for all items
+  // Versandkosten
   const totalShipping = items.reduce(
     (sum, i) => sum + (i.product.shipping_cost ?? 0) * i.quantity,
     0

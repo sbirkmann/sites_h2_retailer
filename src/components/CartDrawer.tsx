@@ -102,7 +102,7 @@ export default function CartDrawer() {
             
             {totalDeposit > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", fontSize: "14px", opacity: 0.7 }}><span>Pfand (steuerfrei)</span><span>{fmt(totalDeposit)}</span></div>}
             
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(23,58,87,0.08)", fontSize: "20px", fontWeight: 800 }}><span>Gesamt (netto)</span><span>{fmt(grandTotal)}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(23,58,87,0.08)", fontSize: "20px", fontWeight: 800 }}><span>Gesamtsumme</span><span>{fmt(grandTotal)}</span></div>
             <button className="btn" onClick={() => { closeCart(); setCheckoutOpen(true); }} style={{ width: "100%", marginTop: "24px", padding: "18px", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
               Zur Kasse
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
