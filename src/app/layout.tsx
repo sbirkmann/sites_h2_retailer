@@ -9,7 +9,6 @@ import { NextIntlClientProvider } from "next-intl";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
-import { NewsletterPopup } from "@/components/layout/newsletter-popup";
 import { CookieBanner } from "@/components/layout/cookie-banner";
 import { ConditionalCapiTracker } from "@/components/layout/conditional-capi-tracker";
 
@@ -105,7 +104,6 @@ export default async function RootLayout({
             />
             <ConditionalCapiTracker />
             <ScrollToTop />
-            <NewsletterPopup />
             <CookieBanner />
             <div className="flex min-h-screen flex-col overflow-x-clip bg-white">
               <Header />
