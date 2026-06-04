@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import {
   ArrowRight, Check, Plus, Minus, ShoppingCart,
-  Package, TrendingDown, Download, Sparkles, MapPin, Users,
+  Package, TrendingDown, Download, MapPin, Users,
   HeadphonesIcon, Image as ImageIcon, Share2, FileText,
   Printer, Monitor, BookOpen, FlaskConical, Award, Lock,
   TrendingUp, Dumbbell, Heart, Stethoscope, Hotel, Gift,
@@ -369,7 +370,6 @@ function HeroSection() {
 const dashboardCards = [
   { icon: ShoppingCart, title: "Produkte bestellen", description: "Dosen, Flaschen und Quetschbeutel – einfach und schnell nachbestellen.", cta: "Zur Bestellung", href: "#produkte", highlight: true },
   { icon: Download, title: "Marketing Center", description: "Produktbilder, Social Media Vorlagen, Flyer, Poster und mehr.", cta: "Materialien laden", href: "#marketing", highlight: false },
-  { icon: Sparkles, title: "Neue Produkte", description: "Coming Soon: Neue Geschmacksrichtungen, Beauty- und Performance-Produkte.", cta: "Entdecken", href: "#coming-soon", highlight: false },
   { icon: MapPin, title: "Retailer Locator", description: "Verwalte deinen Eintrag auf der AWAKE Händlerkarte.", cta: "Eintrag verwalten", href: "#retailer-locator", highlight: false },
   { icon: Users, title: "Partnerprogramm", description: "Empfehle AWAKE weiter und sichere dir attraktive Provisionen.", cta: "Mehr erfahren", href: "#partnerprogramm", highlight: false },
   { icon: HeadphonesIcon, title: "Support", description: "Direkter Kontakt zu deinem persönlichen AWAKE Ansprechpartner.", cta: "Kontakt aufnehmen", href: "#support", highlight: false },
@@ -782,6 +782,8 @@ const revenueExamples = [
 
 const potentialColors: Record<string, string> = { "Sehr hoch": "bg-cta-yellow text-navy", "Hoch": "bg-navy/10 text-navy font-semibold", "Mittel": "bg-navy/5 text-navy/60" };
 
+const RetailerMap = dynamic(() => import("../components/RetailerMap"), { ssr: false });
+
 function RetailerRevenueSection() {
   const headingRef = useRef<HTMLDivElement>(null);
   const locatorRef = useRef<HTMLDivElement>(null);
@@ -830,14 +832,8 @@ function RetailerRevenueSection() {
                   Demnächst verfügbar
                 </div>
               </div>
-              <div className="relative min-h-64 lg:min-h-0 flex items-center justify-center bg-[#f5f4ef]">
-                <div className="text-center p-8">
-                  <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 bg-white border-2 border-navy/15 shadow-sm">
-                    <MapPin size={40} className="text-navy" />
-                  </div>
-                  <p className="font-gothic text-sm font-bold mb-1 text-navy/80">Interaktive Händlerkarte</p>
-                  <p className="font-gothic text-xs text-navy/45">Bald auf awake-water.com verfügbar</p>
-                </div>
+              <div className="relative min-h-[400px] lg:min-h-0 w-full h-full">
+                <RetailerMap />
               </div>
             </div>
           </div>
@@ -895,26 +891,18 @@ function RetailerRevenueSection() {
 // COMING SOON + PARTNER PROGRAM + SUCCESS STORIES
 // ──────────────────────────────────────────────────────────────────────────────
 
-const comingSoonProducts = [
-  { name: "Neue Geschmacksrichtungen", subtitle: "Flavored Hydrogen Water", description: "Natürliche Aromen ohne Kompromisse bei der Wasserstoff-Konzentration.", status: "Q4 2025", icon: "✨" },
-  { name: "Wasserstoff Beauty", subtitle: "H2 Skincare Line", description: "Die Kraft des molekularen Wasserstoffs für die Hautpflege – eine neue Kategorie.", status: "2026", icon: "💎" },
-  { name: "Performance Produkte", subtitle: "H2 Sport Line", description: "Speziell für Leistungssportler und Biohacker – maximale Wasserstoff-Konzentration.", status: "2026", icon: "⚡" },
-  { name: "Weitere Innovationen", subtitle: "AWAKE Ecosystem", description: "AWAKE denkt weiter. Das Ökosystem rund um molekularen Wasserstoff wird wachsen.", status: "Zukunft", icon: "🚀" },
-];
-
 const successStories = [
   { type: "Fitnessstudio", name: "Premium Gym München", quote: "Unsere Mitglieder fragen aktiv nach AWAKE. Es ist zum festen Bestandteil unseres Angebots geworden.", metric: "★★★★★", metricLabel: "Partnerbewertung", avatar: "F" },
   { type: "Longevity Center", name: "Longevity Lab Berlin", quote: "AWAKE ergänzt unsere Protokolle perfekt. Klienten schätzen die Qualität und die Wissenschaft dahinter.", metric: "★★★★★", metricLabel: "Partnerbewertung", avatar: "L" },
   { type: "Biohacking Lab", name: "BioHack Studio Hamburg", quote: "Als Biohacking-Enthusiasten war AWAKE die logische Wahl. Trinkfertig, stabil, wissenschaftlich fundiert.", metric: "★★★★★", metricLabel: "Partnerbewertung", avatar: "B" },
-  { type: "Gesundheitszentrum", name: "Vitality Center Wien", quote: "Die Zusammenarbeit mit AWAKE ist unkompliziert und professionell. Genau das, was wir uns wünschen.", metric: "★★★★★", metricLabel: "Partnerbewertung", avatar: "G" },
+  { type: "Gesundheitszentrum", name: "Vitality Center Wien", quote: "Die Zusammenarbeit mit AWAKE is unkompliziert und professionell. Genau das, was wir uns wünschen.", metric: "★★★★★", metricLabel: "Partnerbewertung", avatar: "G" },
 ];
 
 function ComingSoonSection() {
-  const heading1Ref = useRef<HTMLDivElement>(null);
   const heading2Ref = useRef<HTMLDivElement>(null);
   const partnerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    [heading1Ref, heading2Ref, partnerRef].forEach((ref) => {
+    [heading2Ref, partnerRef].forEach((ref) => {
       const el = ref.current; if (!el) return;
       const observer = new IntersectionObserver(([entry]) => {
         if (entry.isIntersecting) { el.style.opacity = "1"; el.style.transform = "translateY(0)"; observer.disconnect(); }
@@ -925,39 +913,6 @@ function ComingSoonSection() {
 
   return (
     <>
-      {/* Coming Soon */}
-      <section id="coming-soon" className="py-16 lg:py-24 bg-white">
-        <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
-          <hr className="border-navy/10 mb-16" />
-          <div ref={heading1Ref} className="mb-12" style={{ opacity: 0, transform: "translateY(24px)", transition: "opacity 0.6s cubic-bezier(0.23,1,0.32,1), transform 0.6s cubic-bezier(0.23,1,0.32,1)" }}>
-            <SectionBadge className="mb-4"><Sparkles size={12} className="mr-1" /> Neue Produkte</SectionBadge>
-            <h2 className="font-gothic text-[28px] font-bold uppercase leading-[1.05] text-navy sm:text-[36px] lg:text-[44px] mt-3">
-              Die Zukunft von <span className="text-awake-blue">AWAKE</span>
-            </h2>
-            <p className="font-gothic text-[15px] leading-relaxed text-navy/65 mt-3 max-w-xl sm:text-[17px]">
-              Als Partner erhältst du frühzeitigen Zugang zu neuen Produkten und exklusive Konditionen zum Launch.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {comingSoonProducts.map((product) => (
-              <div key={product.name} className="rounded-2xl p-5 bg-white border border-navy/10 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 bg-[#f5f4ef]">{product.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <h3 className="font-gothic text-base font-bold uppercase text-navy">{product.name}</h3>
-                      <span className="font-gothic text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0 bg-cta-yellow text-navy">{product.status}</span>
-                    </div>
-                    <p className="font-gothic text-xs font-medium mb-2 text-navy/50">{product.subtitle}</p>
-                    <p className="font-gothic text-sm leading-relaxed text-navy/65">{product.description}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Partnerprogramm */}
       <section id="partnerprogramm" className="py-16 lg:py-24 bg-navy">
         <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
@@ -1116,7 +1071,7 @@ function VisionSupportSection() {
               <p className="font-gothic text-sm mb-6 text-navy/60">Das AWAKE Partner Portal wird kontinuierlich ausgebaut. Diese Funktionen sind in Entwicklung:</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {futureFunctions.map((fn) => (
-                  <div key={fn} className="flex items-center gap-2 py-2 px-3 rounded-xl font-gothic text-xs font-medium bg-white border border-navy/10 text-navy/65">
+                  <div key={fn} className="flex items-center gap-2 py-2 px-3 rounded-xl font-gothic text-xs font-medium bg-white border border-navy/10 text-navy/65 h-full">
                     <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-cta-yellow" />{fn}
                   </div>
                 ))}

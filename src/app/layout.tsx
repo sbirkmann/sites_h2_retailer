@@ -6,8 +6,8 @@ import { Providers } from "./providers";
 import { SubblyScript } from "@/lib/subbly/subbly-script";
 import { getLocale } from "next-intl/server";
 import { NextIntlClientProvider } from "next-intl";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import { CookieBanner } from "@/components/layout/cookie-banner";
 import { ConditionalCapiTracker } from "@/components/layout/conditional-capi-tracker";
@@ -106,7 +106,7 @@ export default async function RootLayout({
             <ScrollToTop />
             <CookieBanner />
             <div className="flex min-h-screen flex-col overflow-x-clip bg-white">
-              <Header />
+              <Navbar />
               <div className="relative flex-grow h-full">
                 {children}
               </div>

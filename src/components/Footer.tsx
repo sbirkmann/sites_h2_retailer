@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Shield, Truck, Award } from "lucide-react";
+import Link from "next/link";
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -74,11 +75,11 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1.2fr_1fr] gap-10 lg:gap-8">
             {/* Column 1: Brand Info */}
             <div>
-              <a href="#" className="inline-block cursor-pointer">
+              <Link href="/" className="inline-block cursor-pointer">
                 <span className="font-rust font-bold uppercase tracking-wider text-[36px] sm:text-[42px] text-white">
                   AWAKE
                 </span>
-              </a>
+              </Link>
               <p className="font-gothic text-[14px] sm:text-[15px] text-white/70 mt-1 mb-6 max-w-[320px] leading-relaxed">
                 Der exklusive B2B Hub für das erste Wasserstoffgetränk Deutschlands. Hochdosiert, stabil, profitabel für dein Sortiment.
               </p>
@@ -105,28 +106,28 @@ export default function Footer() {
               </div>
               <ul className="space-y-3">
                 <li>
-                  <a
-                    href="#vorteile"
+                  <Link
+                    href="/#dashboard"
                     className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
                   >
-                    Händler-Vorteile
-                  </a>
+                    Dashboard
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#produkte"
+                  <Link
+                    href="/#produkte"
                     className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
                   >
                     B2B Sortiment
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#partner"
+                  <Link
+                    href="/#marketing"
                     className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
                   >
-                    Affiliate Programm
-                  </a>
+                    Marketing Center
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -138,30 +139,20 @@ export default function Footer() {
               </div>
               <ul className="space-y-3">
                 <li>
-                  <a
-                    href="#wissen"
+                  <Link
+                    href="/#partnerprogramm"
                     className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
                   >
-                    Die Wissenschaft
-                  </a>
+                    Partnerprogramm
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#faq"
+                  <Link
+                    href="/#support"
                     className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
                   >
-                    Häufige B2B Fragen
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://h2-awake.de/about"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
-                  >
-                    Über AWAKE
-                  </a>
+                    Support
+                  </Link>
                 </li>
               </ul>
             </div>

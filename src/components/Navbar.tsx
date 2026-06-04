@@ -3,14 +3,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useCart } from "../lib/CartContext";
 import { Menu, X, ShoppingBag } from "lucide-react";
+import Link from "next/link";
 
-const ANNOUNCEMENT_HEIGHT = 40;
-const SCROLL_DELTA = 5;
 
 export default function Navbar() {
   const { totalItems, toggleCart } = useCart();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [hideAnnouncement, setHideAnnouncement] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
@@ -22,15 +20,8 @@ export default function Navbar() {
 
       requestAnimationFrame(() => {
         const y = window.scrollY;
-        const delta = y - lastScrollY.current;
 
         setIsScrolled(y > 10);
-
-        if (delta > SCROLL_DELTA && y > 80) {
-          setHideAnnouncement(true);
-        } else if (delta < -SCROLL_DELTA) {
-          setHideAnnouncement(false);
-        }
 
         lastScrollY.current = y;
         ticking.current = false;
@@ -48,26 +39,8 @@ export default function Navbar() {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 w-full transition-[margin-top] duration-300 ease-in-out ${
-          hideAnnouncement ? "-mt-[40px]" : ""
-        }`}
+        className="fixed top-0 left-0 right-0 z-50 w-full"
       >
-        {/* Yellow B2B Announcement Bar */}
-        <div
-          className="w-full bg-[#FDF277] flex items-center px-3 sm:px-4 lg:px-6"
-          style={{ height: `${ANNOUNCEMENT_HEIGHT}px` }}
-        >
-          <div className="mx-auto w-full max-w-[1498px] flex justify-center items-center">
-            <p
-              suppressHydrationWarning
-              className="text-[#173A57] text-[11px] sm:text-[12px] font-bold font-gothic tracking-[0.15em] uppercase inline-flex items-center gap-2"
-            >
-              <span className="w-2 h-2 rounded-full bg-[#173A57] animate-pulse" />
-              EXKLUSIVE B2B-KONDITIONEN | 20% LIFETIME AFFILIATE PROVISION
-            </p>
-          </div>
-        </div>
-
         {/* Main Navbar */}
         <div
           className={`w-full transition-[background-color,box-shadow] duration-300 ease-in-out ${
@@ -84,20 +57,27 @@ export default function Navbar() {
             <div className="flex items-center justify-between">
               {/* Left Desktop Nav (hidden on mobile) */}
               <nav className="hidden lg:flex flex-1 justify-start gap-8 lg:gap-10">
-                <a
-                  href="#vorteile"
+                <Link
+                  href="/#dashboard"
                   className="text-[#173A57] text-[15px] font-bold font-gothic relative group py-2 flex items-center gap-1 transition-colors hover:text-[#173A57]/60 lg:text-[16px] cursor-pointer"
                 >
-                  Vorteile
+                  Dashboard
                   <span className="absolute bottom-1 left-0 w-0 h-[1.5px] bg-[#173A57] transition-all duration-300 group-hover:w-full" />
-                </a>
-                <a
-                  href="#produkte"
+                </Link>
+                <Link
+                  href="/#produkte"
                   className="text-[#173A57] text-[15px] font-bold font-gothic relative group py-2 flex items-center gap-1 transition-colors hover:text-[#173A57]/60 lg:text-[16px] cursor-pointer"
                 >
                   Sortiment
                   <span className="absolute bottom-1 left-0 w-0 h-[1.5px] bg-[#173A57] transition-all duration-300 group-hover:w-full" />
-                </a>
+                </Link>
+                <Link
+                  href="/#marketing"
+                  className="text-[#173A57] text-[15px] font-bold font-gothic relative group py-2 flex items-center gap-1 transition-colors hover:text-[#173A57]/60 lg:text-[16px] cursor-pointer"
+                >
+                  Marketing
+                  <span className="absolute bottom-1 left-0 w-0 h-[1.5px] bg-[#173A57] transition-all duration-300 group-hover:w-full" />
+                </Link>
               </nav>
 
               {/* Mobile Menu Toggle Button (hidden on desktop) */}
@@ -113,7 +93,7 @@ export default function Navbar() {
 
               {/* Center Logo */}
               <div className="flex-shrink-0 flex justify-center items-center px-4 lg:px-10">
-                <a href="#" className="inline-block cursor-pointer">
+                <Link href="/" className="inline-block cursor-pointer">
                   <img
                     alt="AWAKE Logo - Wasserstoff-Wasser"
                     src="/awake-logo.png"
@@ -122,26 +102,26 @@ export default function Navbar() {
                       isScrolled ? "h-[28px] sm:h-[32px]" : "h-[34px] sm:h-[40px]"
                     }`}
                   />
-                </a>
+                </Link>
               </div>
 
               {/* Right Desktop Nav & Cart Button */}
               <div className="flex-1 flex justify-end items-center gap-6 lg:gap-8">
                 <nav className="hidden lg:flex items-center gap-8 lg:gap-10">
-                  <a
-                    href="#wissen"
+                  <Link
+                    href="/#partnerprogramm"
                     className="text-[#173A57] text-[15px] font-bold font-gothic relative group py-2 flex items-center gap-1 transition-colors hover:text-[#173A57]/60 lg:text-[16px] cursor-pointer"
                   >
-                    Wissenschaft
+                    Partnerprogramm
                     <span className="absolute bottom-1 left-0 w-0 h-[1.5px] bg-[#173A57] transition-all duration-300 group-hover:w-full" />
-                  </a>
-                  <a
-                    href="#partner"
+                  </Link>
+                  <Link
+                    href="/#support"
                     className="text-[#173A57] text-[15px] font-bold font-gothic relative group py-2 flex items-center gap-1 transition-colors hover:text-[#173A57]/60 lg:text-[16px] cursor-pointer"
                   >
-                    Partner
+                    Support
                     <span className="absolute bottom-1 left-0 w-0 h-[1.5px] bg-[#173A57] transition-all duration-300 group-hover:w-full" />
-                  </a>
+                  </Link>
                 </nav>
 
                 {/* Shopping Cart Button */}
@@ -166,40 +146,47 @@ export default function Navbar() {
         {isMobileMenuOpen && (
           <div className="lg:hidden w-full bg-white border-b border-border/80 shadow-lg transition-all duration-300">
             <div className="px-6 py-6 flex flex-col gap-5">
-              <a
-                href="#vorteile"
+              <Link
+                href="/#dashboard"
                 onClick={handleLinkClick}
                 className="text-[#173A57] text-[18px] font-bold font-gothic uppercase tracking-wide hover:text-[#173A57]/60 py-2 border-b border-border/20 cursor-pointer"
               >
-                Vorteile
-              </a>
-              <a
-                href="#produkte"
+                Dashboard
+              </Link>
+              <Link
+                href="/#produkte"
                 onClick={handleLinkClick}
                 className="text-[#173A57] text-[18px] font-bold font-gothic uppercase tracking-wide hover:text-[#173A57]/60 py-2 border-b border-border/20 cursor-pointer"
               >
                 Sortiment
-              </a>
-              <a
-                href="#wissen"
+              </Link>
+              <Link
+                href="/#marketing"
                 onClick={handleLinkClick}
                 className="text-[#173A57] text-[18px] font-bold font-gothic uppercase tracking-wide hover:text-[#173A57]/60 py-2 border-b border-border/20 cursor-pointer"
               >
-                Wissenschaft
-              </a>
-              <a
-                href="#partner"
+                Marketing
+              </Link>
+              <Link
+                href="/#partnerprogramm"
+                onClick={handleLinkClick}
+                className="text-[#173A57] text-[18px] font-bold font-gothic uppercase tracking-wide hover:text-[#173A57]/60 py-2 border-b border-border/20 cursor-pointer"
+              >
+                Partnerprogramm
+              </Link>
+              <Link
+                href="/#support"
                 onClick={handleLinkClick}
                 className="text-[#173A57] text-[18px] font-bold font-gothic uppercase tracking-wide hover:text-[#173A57]/60 py-2 cursor-pointer"
               >
-                Partner
-              </a>
+                Support
+              </Link>
             </div>
           </div>
         )}
       </header>
       {/* Spacer for fixed Header */}
-      <div className="h-[96px] sm:h-[104px] md:h-[110px]" />
+      <div className="h-[56px] sm:h-[64px] md:h-[70px]" />
     </>
   );
 }
