@@ -28,7 +28,10 @@ import {
   ShoppingCart,
   TrendingDown,
   Package,
-  Upload
+  Upload,
+  Trash2,
+  Edit3,
+  HelpCircle
 } from "lucide-react";
 import { 
   getRetailerPortalAccessCode, 
@@ -38,11 +41,17 @@ import {
   getRetailerOrders,
   getRetailerDownloads,
   fetchProducts,
+  getRetailerAddresses,
+  createRetailerAddress,
+  updateRetailerAddress,
+  deleteRetailerAddress,
+  createSupportTicket,
   ApiProduct,
   RetailerInfo,
   RetailerOrder,
   MarketingDownload,
-  uploadVatDocument
+  uploadVatDocument,
+  type CustomerAddressDb
 } from "@/lib/api";
 import { useCart } from "@/lib/CartContext";
 import { apiProductToDisplay } from "@/lib/products";
@@ -76,7 +85,19 @@ function eraseCookie(name: string) {
 
 // ─── Leaflet Map Preview Component ───────────────────────────────────────────
 
-function LocalRetailerMap({ lat, lng, name }: { lat: number; lng: number; name: string }) {
+function LocalRetailerMap({ 
+  lat, 
+  lng, 
+  name, 
+  website, 
+  phone 
+}: { 
+  lat: number; 
+  lng: number; 
+  name: string; 
+  website?: string; 
+  phone?: string; 
+}) {
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -128,12 +149,34 @@ function LocalRetailerMap({ lat, lng, name }: { lat: number; lng: number; name: 
         });
 
         const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
-        marker.bindPopup(`
-          <div style="font-family: var(--font-century-gothic), sans-serif; padding: 4px; color: #173A57;">
-            <strong style="font-size:12px; display:block; margin-bottom:2px;">${name || "Händler-Standort"}</strong>
-            <span style="font-size:10px; opacity:0.8;">Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}</span>
-          </div>
-        `).openPopup();
+        
+        let popupHtml = `
+          <div style="font-family: var(--font-century-gothic), sans-serif; padding: 4px; color: #173A57; min-width: 160px;">
+            <strong style="font-size:12px; display:block; margin-bottom:6px; text-transform: uppercase; border-bottom: 1px solid rgba(23,58,87,0.1); padding-bottom: 4px;">${name || "Händler-Standort"}</strong>
+        `;
+        if (phone) {
+          popupHtml += `
+            <div style="font-size:11px; margin-bottom:4px; display:flex; align-items:center; gap:4px;">
+              <span>📞</span>
+              <a href="tel:${phone}" style="color:#173A57; text-decoration:none; font-weight:600;">${phone}</a>
+            </div>
+          `;
+        }
+        if (website) {
+          let url = website;
+          if (!/^https?:\/\//i.test(url)) {
+            url = `https://${url}`;
+          }
+          popupHtml += `
+            <div style="font-size:11px; display:flex; align-items:center; gap:4px;">
+              <span>🌐</span>
+              <a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#173A57; text-decoration:underline; font-weight:600;">Website</a>
+            </div>
+          `;
+        }
+        popupHtml += `</div>`;
+
+        marker.bindPopup(popupHtml).openPopup();
 
       } catch (err) {
         console.error("Leaflet init error:", err);
@@ -149,7 +192,7 @@ function LocalRetailerMap({ lat, lng, name }: { lat: number; lng: number; name: 
         mapInstanceRef.current = null;
       }
     };
-  }, [lat, lng, name]);
+  }, [lat, lng, name, website, phone]);
 
   return (
     <div className="relative w-full h-[280px] rounded-xl overflow-hidden border border-navy/10 shadow-inner bg-[#f5f4ef]">
@@ -329,12 +372,41 @@ export default function RetailerPortalPage() {
 
   // Active Session info
   const [retailerInfo, setRetailerInfo] = useState<RetailerInfo | null>(null);
-  const [activeTab, setActiveTab] = useState<"dummy" | "profile" | "orders" | "order" | "affiliate">("dummy");
+  const [activeTab, setActiveTab] = useState<"dummy" | "profile" | "orders" | "order" | "affiliate" | "addresses" | "support">("dummy");
 
   // Orders State
   const [orders, setOrders] = useState<RetailerOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState<string | null>(null);
+
+  // Addresses State
+  const [addresses, setAddresses] = useState<CustomerAddressDb[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [addressesError, setAddressesError] = useState<string | null>(null);
+  
+  // Address Form State
+  const [addressEditMode, setAddressEditMode] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<CustomerAddressDb | null>(null);
+  const [addrFirstName, setAddrFirstName] = useState("");
+  const [addrLastName, setAddrLastName] = useState("");
+  const [addrAddress1, setAddrAddress1] = useState("");
+  const [addrAddress2, setAddrAddress2] = useState("");
+  const [addrCity, setAddrCity] = useState("");
+  const [addrZip, setAddrZip] = useState("");
+  const [addrCountry, setAddrCountry] = useState("DE");
+  const [addrPhone, setAddrPhone] = useState("");
+  const [addrSaveLoading, setAddrSaveLoading] = useState(false);
+  const [addrSaveError, setAddrSaveError] = useState<string | null>(null);
+
+  // Support Assistant State
+  const [supportStep, setSupportStep] = useState<1 | 2 | 3 | 4>(1);
+  const [supportCategory, setSupportCategory] = useState("");
+  const [supportIssueType, setSupportIssueType] = useState("");
+  const [supportOrderId, setSupportOrderId] = useState("");
+  const [supportDescription, setSupportDescription] = useState("");
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportError, setSupportError] = useState<string | null>(null);
+  const [supportTicketId, setSupportTicketId] = useState<string | null>(null);
 
   // Downloads State
   const [downloads, setDownloads] = useState<MarketingDownload[]>([]);
@@ -581,6 +653,133 @@ export default function RetailerPortalPage() {
     }
   }, []);
 
+  const loadAddresses = React.useCallback(async () => {
+    const email = getCookie("retailer_email") || "";
+    const code = getCookie("retailer_code") || "";
+    if (!email || !code) return;
+
+    setAddressesLoading(true);
+    setAddressesError(null);
+    try {
+      const data = await getRetailerAddresses(email, code);
+      setAddresses(data);
+    } catch (err) {
+      console.error(err);
+      setAddressesError(err instanceof Error ? err.message : "Adressen konnten nicht geladen werden.");
+    } finally {
+      setAddressesLoading(false);
+    }
+  }, []);
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddrSaveLoading(true);
+    setAddrSaveError(null);
+
+    const email = getCookie("retailer_email") || "";
+    const code = getCookie("retailer_code") || "";
+
+    const payload = {
+      first_name: addrFirstName.trim(),
+      last_name: addrLastName.trim(),
+      address1: addrAddress1.trim(),
+      address2: addrAddress2.trim() || null,
+      city: addrCity.trim(),
+      zip: addrZip.trim(),
+      country: addrCountry,
+      phone: addrPhone.trim() || null,
+    };
+
+    try {
+      if (editingAddress) {
+        await updateRetailerAddress(email, code, editingAddress.id, payload);
+      } else {
+        await createRetailerAddress(email, code, payload);
+      }
+      setAddressEditMode(false);
+      setEditingAddress(null);
+      loadAddresses();
+    } catch (err) {
+      setAddrSaveError(err instanceof Error ? err.message : "Speichern fehlgeschlagen.");
+    } finally {
+      setAddrSaveLoading(false);
+    }
+  };
+
+  const handleStartEditAddress = (addr: CustomerAddressDb) => {
+    setEditingAddress(addr);
+    setAddrFirstName(addr.first_name || "");
+    setAddrLastName(addr.last_name || "");
+    setAddrAddress1(addr.address1 || "");
+    setAddrAddress2(addr.address2 || "");
+    setAddrCity(addr.city || "");
+    setAddrZip(addr.zip || "");
+    setAddrCountry(addr.country || "DE");
+    setAddrPhone(addr.phone || "");
+    setAddrSaveError(null);
+    setAddressEditMode(true);
+  };
+
+  const handleStartAddAddress = () => {
+    setEditingAddress(null);
+    setAddrFirstName("");
+    setAddrLastName("");
+    setAddrAddress1("");
+    setAddrAddress2("");
+    setAddrCity("");
+    setAddrZip("");
+    setAddrCountry("DE");
+    setAddrPhone("");
+    setAddrSaveError(null);
+    setAddressEditMode(true);
+  };
+
+  const handleDeleteAddress = async (id: number) => {
+    if (!confirm("Möchten Sie diese Lieferadresse wirklich löschen?")) return;
+    const email = getCookie("retailer_email") || "";
+    const code = getCookie("retailer_code") || "";
+    try {
+      await deleteRetailerAddress(email, code, id);
+      loadAddresses();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Löschen fehlgeschlagen.");
+    }
+  };
+
+  const handleCreateSupportTicketSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSupportLoading(true);
+    setSupportError(null);
+    setSupportTicketId(null);
+
+    const email = getCookie("retailer_email") || "";
+    const code = getCookie("retailer_code") || "";
+
+    try {
+      const res = await createSupportTicket(email, code, {
+        category: supportCategory,
+        issue_type: supportIssueType || undefined,
+        order_id: supportOrderId || undefined,
+        description: supportDescription,
+      });
+
+      if (res.success && res.ticket_id) {
+        setSupportTicketId(res.ticket_id);
+        setSupportStep(4);
+        // Reset form
+        setSupportDescription("");
+        setSupportOrderId("");
+        setSupportIssueType("");
+      } else {
+        setSupportError(res.message || "Erstellung fehlgeschlagen.");
+      }
+    } catch (err) {
+      setSupportError(err instanceof Error ? err.message : "Verbindung fehlgeschlagen.");
+    } finally {
+      setSupportLoading(false);
+    }
+  };
+
   const loadDownloads = React.useCallback(async () => {
     const email = getCookie("retailer_email") || "";
     const code = getCookie("retailer_code") || "";
@@ -607,7 +806,7 @@ export default function RetailerPortalPage() {
   }
 
   useEffect(() => {
-    if (activeTab === "orders" && isLoggedIn) {
+    if ((activeTab === "orders" || activeTab === "support") && isLoggedIn) {
       const timer = setTimeout(() => {
         loadOrders();
       }, 0);
@@ -639,6 +838,15 @@ export default function RetailerPortalPage() {
     }, 0);
     return () => clearTimeout(timer);
   }, [loadInfo]);
+
+  useEffect(() => {
+    if ((activeTab === "addresses" || activeTab === "order") && isLoggedIn) {
+      const timer = setTimeout(() => {
+        loadAddresses();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, isLoggedIn, loadAddresses]);
 
   // Login Code Request
   async function handleRequestCode(e: React.FormEvent) {
@@ -1134,6 +1342,26 @@ export default function RetailerPortalPage() {
               >
                 Partnerprogramm
               </button>
+              <button
+                onClick={() => { setActiveTab("addresses"); setError(null); }}
+                className={`py-3 px-4 font-bold text-sm tracking-wider uppercase border-b-2 transition-all cursor-pointer ${
+                  activeTab === "addresses"
+                    ? "border-[#173A57] text-[#173A57]"
+                    : "border-transparent text-[#173A57]/40 hover:text-[#173A57]/60"
+                }`}
+              >
+                Lieferadressen
+              </button>
+              <button
+                onClick={() => { setActiveTab("support"); setError(null); }}
+                className={`py-3 px-4 font-bold text-sm tracking-wider uppercase border-b-2 transition-all cursor-pointer ${
+                  activeTab === "support"
+                    ? "border-[#173A57] text-[#173A57]"
+                    : "border-transparent text-[#173A57]/40 hover:text-[#173A57]/60"
+                }`}
+              >
+                Support-Assistent
+              </button>
             </div>
 
             {/* Tab 1: Marketing & Downloads (Dummy) */}
@@ -1444,6 +1672,8 @@ export default function RetailerPortalPage() {
                       lat={parseFloat(mapLat)}
                       lng={parseFloat(mapLng)}
                       name={infoName || `${retailerInfo?.first_name} ${retailerInfo?.last_name}`}
+                      website={infoWebsite}
+                      phone={infoTel}
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center flex-grow py-16 bg-[#f5f4ef] border border-navy/10 rounded-xl text-center p-6 gap-3">
@@ -1871,29 +2101,631 @@ export default function RetailerPortalPage() {
                     <div className="bg-[#173A57]/5 border border-[#173A57]/10 rounded-xl p-5 space-y-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="space-y-2 flex-1">
                         <span className="text-[10px] text-navy/40 font-bold uppercase tracking-wider">
-                          {retailerInfo?.recruiter_code ? "Dein Empfehlungs-Partnerlink" : "AWAKE Webseite"}
+                          {retailerInfo?.recruiter_code ? "Dein Empfehlungs-Partnerlink" : "AWAKE Partnerseite"}
                         </span>
                         <p className="text-sm font-semibold">
                           {retailerInfo?.recruiter_code ? (
                             <>Du wurdest von Partner <strong>{retailerInfo.recruiter_code}</strong> geworben.</>
                           ) : (
-                            <>Besuche die AWAKE-Webseite:</>
+                            <>Besuche die AWAKE Partnerseite:</>
                           )}
                         </p>
                         <div className="text-xs font-mono text-navy/70 select-all p-2.5 bg-white border border-navy/10 rounded-lg">
-                          {retailerInfo?.recruiter_link || "https://h2-awake.de/"}
+                          {retailerInfo?.recruiter_link || "https://h2-awake.de/partner"}
                         </div>
                       </div>
                       <a
-                        href={retailerInfo?.recruiter_link || "https://h2-awake.de/"}
+                        href={retailerInfo?.recruiter_link || "https://h2-awake.de/partner"}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center gap-2 bg-[#173A57] hover:bg-[#173A57]/90 text-white font-bold py-3 px-6 rounded-xl transition-all shadow text-xs uppercase tracking-wider border-none text-center cursor-pointer shrink-0"
                       >
-                        <span>AWAKE Webseite besuchen</span>
+                        <span>AWAKE Partnerseite besuchen</span>
                         <ExternalLink className="h-3.5 w-3.5" />
                       </a>
                     </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 6: Lieferadressen */}
+            {activeTab === "addresses" && (
+              <div className="bg-white border border-navy/10 rounded-2xl p-6 md:p-8 space-y-6 animate-fadeIn">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#173A57]/10 pb-4">
+                  <div>
+                    <h3 className="text-xl font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-[#173A57]" />
+                      <span>Lieferadressen verwalten</span>
+                    </h3>
+                    <p className="text-xs text-navy/60">
+                      Hinterlege hier zusätzliche Versandanschriften für deine Bestellungen.
+                    </p>
+                  </div>
+                  {!addressEditMode && (
+                    <button
+                      onClick={handleStartAddAddress}
+                      className="self-start sm:self-center flex items-center justify-center gap-1.5 bg-[#173A57] hover:bg-[#173A57]/90 text-white font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow cursor-pointer border-none"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Adresse hinzufügen</span>
+                    </button>
+                  )}
+                </div>
+
+                {addressesError && (
+                  <div className="p-4 rounded-xl bg-red-50 text-red-700 text-xs flex items-start gap-2 border border-red-100">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>{addressesError}</span>
+                  </div>
+                )}
+
+                {/* Address Form (Add / Edit) */}
+                {addressEditMode && (
+                  <div className="bg-[#f5f4ef]/50 border border-navy/10 rounded-2xl p-5 md:p-6 space-y-4 animate-fadeIn">
+                    <h4 className="font-bold text-sm uppercase text-navy border-b border-navy/5 pb-2">
+                      {editingAddress ? "Lieferadresse bearbeiten" : "Neue Lieferadresse hinzufügen"}
+                    </h4>
+                    
+                    {addrSaveError && (
+                      <div className="p-3 rounded-lg bg-red-50 text-red-700 text-xs border border-red-100">
+                        {addrSaveError}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSaveAddress} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                            Vorname *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={addrFirstName}
+                            onChange={(e) => setAddrFirstName(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                            Nachname *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={addrLastName}
+                            onChange={(e) => setAddrLastName(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                            Straße & Hausnummer *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={addrAddress1}
+                            onChange={(e) => setAddrAddress1(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                            Adresszusatz (optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={addrAddress2}
+                            onChange={(e) => setAddrAddress2(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                            PLZ *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={addrZip}
+                            onChange={(e) => setAddrZip(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                            Ort *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={addrCity}
+                            onChange={(e) => setAddrCity(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                            Land *
+                          </label>
+                          <select
+                            value={addrCountry}
+                            onChange={(e) => setAddrCountry(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs cursor-pointer"
+                          >
+                            <option value="DE">Deutschland</option>
+                            <option value="AT">Österreich</option>
+                            <option value="CH">Schweiz</option>
+                            <option value="NL">Niederlande</option>
+                            <option value="BE">Belgien</option>
+                            <option value="FR">Frankreich</option>
+                            <option value="IT">Italien</option>
+                            <option value="ES">Spanien</option>
+                            <option value="PL">Polen</option>
+                            <option value="CZ">Tschechien</option>
+                            <option value="LU">Luxemburg</option>
+                            <option value="DK">Dänemark</option>
+                            <option value="SE">Schweden</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                          Telefonnummer (optional)
+                        </label>
+                        <input
+                          type="tel"
+                          value={addrPhone}
+                          onChange={(e) => setAddrPhone(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAddressEditMode(false);
+                            setEditingAddress(null);
+                          }}
+                          className="flex-1 bg-white hover:bg-gray-100 text-[#173A57] border border-navy/10 font-bold py-2 rounded-xl text-xs transition-all cursor-pointer text-center"
+                        >
+                          Abbrechen
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={addrSaveLoading}
+                          className="flex-1 bg-[#173A57] hover:bg-[#173A57]/90 text-white font-bold py-2 rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer border-none"
+                        >
+                          {addrSaveLoading ? (
+                            <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            "Speichern"
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* Address Cards List */}
+                {addressesLoading && addresses.length === 0 ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="w-8 h-8 border-4 border-navy/20 border-t-navy rounded-full animate-spin" />
+                  </div>
+                ) : addresses.length === 0 ? (
+                  <div className="text-center py-12 text-sm text-navy/40 italic bg-[#f5f4ef]/30 rounded-2xl border border-dashed border-navy/10">
+                    Keine Lieferadresse hinterlegt. Klicken Sie auf „Adresse hinzufügen“, um eine anzulegen.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {addresses.map((addr) => (
+                      <div
+                        key={addr.id}
+                        className="bg-white border border-navy/10 hover:border-navy/20 rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all hover:shadow-md relative"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm text-navy">
+                              {addr.first_name} {addr.last_name}
+                            </span>
+                            <span className="inline-block px-2 py-0.5 rounded bg-[#173A57]/5 text-[#173A57] text-[10px] font-bold font-mono">
+                              {addr.country}
+                            </span>
+                          </div>
+                          <div className="text-xs text-navy/70 space-y-0.5 leading-relaxed">
+                            <p>{addr.address1}</p>
+                            {addr.address2 && <p className="text-[11px] text-navy/50">{addr.address2}</p>}
+                            <p>{addr.zip} {addr.city}</p>
+                            {addr.phone && (
+                              <p className="text-[11px] text-navy/50 flex items-center gap-1 pt-1 border-t border-navy/5">
+                                📞 {addr.phone}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 border-t border-navy/5 pt-3 mt-1">
+                          <button
+                            onClick={() => handleStartEditAddress(addr)}
+                            className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#173A57] hover:text-[#2563EB] transition-colors bg-transparent border-none cursor-pointer"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                            <span>Bearbeiten</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAddress(addr.id)}
+                            className="flex items-center gap-1 text-[11px] font-bold uppercase text-red-600 hover:text-red-700 transition-colors bg-transparent border-none cursor-pointer"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            <span>Löschen</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 7: Support-Assistent */}
+            {activeTab === "support" && (
+              <div className="bg-white border border-navy/10 rounded-2xl p-6 md:p-8 space-y-6 animate-fadeIn max-w-3xl">
+                <div>
+                  <h3 className="text-xl font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <HelpCircle className="h-5 w-5 text-[#173A57]" />
+                    <span>Support-Assistent</span>
+                  </h3>
+                  <p className="text-xs text-navy/60">
+                    Wir helfen dir schnell und unkompliziert. Folge den Schritten, um ein Zoho Support-Ticket zu erstellen.
+                  </p>
+                </div>
+
+                {/* Progress Indicators */}
+                {supportStep !== 4 && (
+                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-navy/40 border-b border-navy/5 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${supportStep >= 1 ? "bg-[#173A57] text-white" : "bg-navy/5"}`}>1</span>
+                      <span className={supportStep >= 1 ? "text-navy" : ""}>Kategorie</span>
+                    </div>
+                    <div className="h-[2px] bg-navy/5 flex-1 mx-4" />
+                    <div className="flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${supportStep >= 2 ? "bg-[#173A57] text-white" : "bg-navy/5"}`}>2</span>
+                      <span className={supportStep >= 2 ? "text-navy" : ""}>Details</span>
+                    </div>
+                    <div className="h-[2px] bg-navy/5 flex-1 mx-4" />
+                    <div className="flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${supportStep >= 3 ? "bg-[#173A57] text-white" : "bg-navy/5"}`}>3</span>
+                      <span className={supportStep >= 3 ? "text-navy" : ""}>Beschreibung</span>
+                    </div>
+                  </div>
+                )}
+
+                {supportError && (
+                  <div className="p-4 rounded-xl bg-red-50 text-red-700 text-xs flex items-start gap-2 border border-red-100">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>{supportError}</span>
+                  </div>
+                )}
+
+                {/* Support Step 1: Category Selection */}
+                {supportStep === 1 && (
+                  <div className="space-y-4">
+                    <p className="text-sm font-semibold mb-2">Wähle den Bereich deiner Anfrage:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Category 1 */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSupportCategory("Bestellung & Lieferung");
+                          setSupportStep(2);
+                        }}
+                        className="text-left bg-white border border-navy/10 hover:border-navy/35 rounded-2xl p-5 hover:shadow-md transition-all group flex gap-4 cursor-pointer animate-fadeIn"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-[#173A57]/5 flex items-center justify-center shrink-0 text-[#173A57]">
+                          <ShoppingBag className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-xs uppercase group-hover:text-[#2563EB] transition-colors">
+                            Bestellung & Lieferung
+                          </h4>
+                          <p className="text-[11px] text-navy/60 leading-relaxed">
+                            Lieferungsverzug, Transportschäden oder Fragen zur Sendungsverfolgung.
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* Category 2 */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSupportCategory("Rechnungen & Finanzen");
+                          setSupportStep(2);
+                        }}
+                        className="text-left bg-white border border-navy/10 hover:border-navy/35 rounded-2xl p-5 hover:shadow-md transition-all group flex gap-4 cursor-pointer animate-fadeIn"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-[#173A57]/5 flex items-center justify-center shrink-0 text-[#173A57]">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-xs uppercase group-hover:text-[#2563EB] transition-colors">
+                            Rechnungen & Finanzen
+                          </h4>
+                          <p className="text-[11px] text-navy/60 leading-relaxed">
+                            Fragen zu Zahlungsbelegen, Mehrwertsteuer oder der USt-IdNr.-Freigabe.
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* Category 3 */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSupportCategory("POS & Marketingmaterial");
+                          setSupportStep(2);
+                        }}
+                        className="text-left bg-white border border-navy/10 hover:border-navy/35 rounded-2xl p-5 hover:shadow-md transition-all group flex gap-4 cursor-pointer animate-fadeIn"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-[#173A57]/5 flex items-center justify-center shrink-0 text-[#173A57]">
+                          <Package className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-xs uppercase group-hover:text-[#2563EB] transition-colors">
+                            POS & Marketingmaterial
+                          </h4>
+                          <p className="text-[11px] text-navy/60 leading-relaxed">
+                            Werbeaufsteller anfordern, Flyer bestellen oder Eintrag Händlerkarte bearbeiten.
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* Category 4 */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSupportCategory("Produkt & Sonstiges");
+                          setSupportStep(2);
+                        }}
+                        className="text-left bg-white border border-navy/10 hover:border-navy/35 rounded-2xl p-5 hover:shadow-md transition-all group flex gap-4 cursor-pointer animate-fadeIn"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-[#173A57]/5 flex items-center justify-center shrink-0 text-[#173A57]">
+                          <Mail className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-xs uppercase group-hover:text-[#2563EB] transition-colors">
+                            Produkt & Sonstiges
+                          </h4>
+                          <p className="text-[11px] text-navy/60 leading-relaxed">
+                            Qualitätsfeedback, allgemeine Produktfragen oder Partnerschaftliches.
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Support Step 2: Specific Details */}
+                {supportStep === 2 && (
+                  <div className="space-y-4">
+                    <div className="bg-[#173A57]/5 rounded-xl p-4 border border-[#173A57]/10 flex items-center gap-2 mb-4">
+                      <span className="text-[11px] font-bold uppercase text-navy">Gewählte Kategorie:</span>
+                      <span className="px-2.5 py-0.5 rounded bg-white text-navy font-bold text-xs border border-navy/10">
+                        {supportCategory}
+                      </span>
+                    </div>
+
+                    {(supportCategory === "Bestellung & Lieferung" || supportCategory === "Rechnungen & Finanzen") && (
+                      <div className="space-y-4">
+                        {/* Order Dropdown Selection */}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-navy/70 mb-1.5">
+                            Betroffene Bestellung
+                          </label>
+                          <select
+                            value={supportOrderId}
+                            onChange={(e) => setSupportOrderId(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-50 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs font-semibold cursor-pointer"
+                          >
+                            <option value="">-- Keine Bestellung ausgewählt --</option>
+                            {orders.map((o) => (
+                              <option key={o.id} value={o.id.toString()}>
+                                #{o.id} vom {o.created_at ? new Date(o.created_at).toLocaleDateString("de-DE") : "-"} ({o.payment_amount !== null ? `${o.payment_amount.toLocaleString("de-DE")} €` : ""})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Issue Type Selector */}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-navy/70 mb-1.5">
+                            Thema der Anfrage
+                          </label>
+                          <select
+                            value={supportIssueType}
+                            onChange={(e) => setSupportIssueType(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-50 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs font-semibold cursor-pointer"
+                            required
+                          >
+                            <option value="">-- Bitte wählen --</option>
+                            {supportCategory === "Bestellung & Lieferung" ? (
+                              <>
+                                <option value="Lieferungsverzug">Lieferungsverzug / Versandstatus</option>
+                                <option value="Transportschaden / Fehlende Artikel">Transportschaden / Fehlende Artikel</option>
+                                <option value="Falsche Artikel geliefert">Falsche Artikel geliefert</option>
+                                <option value="Sonstiges">Sonstiges</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="Falsche Rechnungsanschrift">Falsche Rechnungsanschrift</option>
+                                <option value="Fehlende Rechnung">Fehlende Rechnung</option>
+                                <option value="Zahlungsstatus klären">Zahlungsstatus klären</option>
+                                <option value="VAT / USt-IdNr. Probleme">VAT / USt-IdNr. Probleme</option>
+                                <option value="Sonstiges">Sonstiges</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {supportCategory === "POS & Marketingmaterial" && (
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-navy/70 mb-1.5">
+                          Was benötigen Sie?
+                        </label>
+                        <select
+                          value={supportIssueType}
+                          onChange={(e) => setSupportIssueType(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-50 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs font-semibold cursor-pointer"
+                          required
+                        >
+                          <option value="">-- Bitte wählen --</option>
+                          <option value="Händlerkarte Eintrag anpassen">Eintrag Händlerkarte anpassen</option>
+                          <option value="Werbeaufsteller anfordern">Werbeaufsteller (Aufsteller) anfordern</option>
+                          <option value="Flyer & Broschüren">Flyer / Broschüren bestellen</option>
+                          <option value="Sonstiges">Sonstiges</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {supportCategory === "Produkt & Sonstiges" && (
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-navy/70 mb-1.5">
+                          Betreff / Thema
+                        </label>
+                        <select
+                          value={supportIssueType}
+                          onChange={(e) => setSupportIssueType(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-50 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs font-semibold cursor-pointer"
+                          required
+                        >
+                          <option value="">-- Bitte wählen --</option>
+                          <option value="Produktqualität / Feedback">Produktqualität / Feedback</option>
+                          <option value="Großhandelsanfrage">Großhandelsanfrage</option>
+                          <option value="Sonstiges">Sonstiges Anliegen</option>
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 pt-4 border-t border-navy/5">
+                      <button
+                        type="button"
+                        onClick={() => setSupportStep(1)}
+                        className="flex-1 bg-[#f5f4ef] hover:bg-[#173A57]/5 text-[#173A57] border border-navy/10 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+                      >
+                        Zurück
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSupportStep(3)}
+                        disabled={!supportIssueType}
+                        className="flex-1 bg-[#173A57] hover:bg-[#173A57]/90 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer border-none"
+                      >
+                        Weiter
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Support Step 3: Description */}
+                {supportStep === 3 && (
+                  <form onSubmit={handleCreateSupportTicketSubmit} className="space-y-4 animate-fadeIn">
+                    <div className="bg-[#173A57]/5 rounded-xl p-4 border border-[#173A57]/10 flex flex-wrap gap-x-6 gap-y-2 mb-4 text-xs font-bold text-navy">
+                      <div>
+                        <span className="opacity-50 uppercase text-[10px] block">Kategorie</span>
+                        <span>{supportCategory}</span>
+                      </div>
+                      <div className="h-6 w-[1px] bg-navy/10 hidden sm:block" />
+                      <div>
+                        <span className="opacity-50 uppercase text-[10px] block">Thema</span>
+                        <span>{supportIssueType}</span>
+                      </div>
+                      {supportOrderId && (
+                        <>
+                          <div className="h-6 w-[1px] bg-navy/10 hidden sm:block" />
+                          <div>
+                            <span className="opacity-50 uppercase text-[10px] block">Bestellnummer</span>
+                            <span>#{supportOrderId}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-navy/70 mb-1.5">
+                        Ihre Nachricht / Details *
+                      </label>
+                      <textarea
+                        required
+                        rows={6}
+                        placeholder="Beschreiben Sie Ihr Anliegen so detailliert wie möglich..."
+                        value={supportDescription}
+                        onChange={(e) => setSupportDescription(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs leading-relaxed"
+                      />
+                    </div>
+
+                    <div className="flex gap-3 pt-4 border-t border-navy/5">
+                      <button
+                        type="button"
+                        onClick={() => setSupportStep(2)}
+                        className="flex-1 bg-[#f5f4ef] hover:bg-[#173A57]/5 text-[#173A57] border border-navy/10 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+                      >
+                        Zurück
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={supportLoading || !supportDescription.trim()}
+                        className="flex-1 bg-[#173A57] hover:bg-[#173A57]/90 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer border-none"
+                      >
+                        {supportLoading ? (
+                          <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          "Ticket senden"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Support Step 4: Success / Done */}
+                {supportStep === 4 && (
+                  <div className="text-center py-10 space-y-6 animate-fadeIn">
+                    <div className="w-16 h-16 rounded-full bg-green-50 text-green-600 flex items-center justify-center mx-auto border border-green-100">
+                      <Check className="h-8 w-8" />
+                    </div>
+                    <div className="space-y-2 max-w-md mx-auto">
+                      <h4 className="font-bold text-lg">Support-Ticket erstellt!</h4>
+                      <p className="text-xs text-navy/70 leading-relaxed">
+                        Ihre Anfrage wurde erfolgreich an unser Ticketsystem übermittelt. Wir haben das Ticket mit der ID <strong>#{supportTicketId}</strong> erfasst.
+                      </p>
+                      <p className="text-[11px] text-navy/50">
+                        Wir prüfen Ihr Anliegen und melden uns in Kürze unter <strong>{retailerInfo?.email}</strong> bei Ihnen zurück.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSupportStep(1);
+                        setSupportCategory("");
+                        setSupportIssueType("");
+                        setSupportOrderId("");
+                        setSupportDescription("");
+                        setSupportTicketId(null);
+                      }}
+                      className="bg-[#173A57] hover:bg-[#173A57]/90 text-white font-bold py-2 px-6 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer border-none"
+                    >
+                      Neues Ticket erstellen
+                    </button>
                   </div>
                 )}
               </div>

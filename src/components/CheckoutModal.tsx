@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useCart, calculateShippingCost } from "../lib/CartContext";
-import { sendLoginCode, verifyLoginCode, createOrder, fetchProducts, getCachedVatRates, validateVatId, type OrderItem, type RetailerInfo } from "../lib/api";
+import { sendLoginCode, verifyLoginCode, createOrder, fetchProducts, getCachedVatRates, validateVatId, getRetailerAddresses, type OrderItem, type RetailerInfo, type CustomerAddressDb } from "../lib/api";
 
 // ─── VAT rates by country ───────────────────────────────────────────────────
 const VAT_RATES: Record<string, { label: string; rate: number }> = {
@@ -117,7 +117,22 @@ export default function CheckoutModal({
   const [code, setCode] = useState(initialCode || "");
   const [customerExists, setCustomerExists] = useState(hasPrefilled);
 
+  const [savedAddresses, setSavedAddresses] = useState<CustomerAddressDb[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("manual");
+
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (prefilledCustomer && email && code) {
+      getRetailerAddresses(email, code)
+        .then((addrs) => {
+          setSavedAddresses(addrs);
+        })
+        .catch((err) => {
+          console.error("Failed to load saved retailer addresses in checkout:", err);
+        });
+    }
+  }, [prefilledCustomer, email, code]);
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState("");
   const [vatRatesMap, setVatRatesMap] = useState<Record<string, { label: string; rate: number }>>(VAT_RATES);
@@ -136,6 +151,32 @@ export default function CheckoutModal({
   const [vatId, setVatId] = useState(prefilledCustomer?.vat_id || "");
   const [vatChecked, setVatChecked] = useState(prefilledCustomer?.vat_checked || false);
   const [vatLoading, setVatLoading] = useState(false);
+
+  const handleAddressSelect = (addrId: string) => {
+    setSelectedAddressId(addrId);
+    if (addrId === "manual") {
+      setFirstName(prefilledCustomer?.first_name || "");
+      setLastName(prefilledCustomer?.last_name || "");
+      setCompany(prefilledCustomer?.info_name || "");
+      setPhone(prefilledCustomer?.phone || prefilledCustomer?.info_tel || "");
+      setStreet(prefilledCustomer?.address?.street || "");
+      setZip(prefilledCustomer?.address?.zip || "");
+      setCity(prefilledCustomer?.address?.city || "");
+      setCountryCode(getCountryCodeFromAddress(prefilledCustomer?.address));
+    } else {
+      const selected = savedAddresses.find((a) => a.id.toString() === addrId);
+      if (selected) {
+        setFirstName(selected.first_name || "");
+        setLastName(selected.last_name || "");
+        setCompany(prefilledCustomer?.info_name || "");
+        setPhone(selected.phone || "");
+        setStreet(selected.address1 || "");
+        setZip(selected.zip || "");
+        setCity(selected.city || "");
+        setCountryCode(selected.country || "DE");
+      }
+    }
+  };
 
   const handleValidateVat = async (customVatId = vatId) => {
     const val = customVatId.trim();
@@ -496,6 +537,24 @@ export default function CheckoutModal({
           {step === "address" && (
             <>
               {renderOrderSummary()}
+
+              {prefilledCustomer && savedAddresses.length > 0 && (
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={labelStyle}>Gespeicherte Lieferadresse</label>
+                  <select
+                    value={selectedAddressId}
+                    onChange={(e) => handleAddressSelect(e.target.value)}
+                    style={{ ...inputStyle, cursor: "pointer", fontWeight: 600, border: "1px solid #173A57" }}
+                  >
+                    <option value="manual">-- Neue Lieferadresse eingeben --</option>
+                    {savedAddresses.map((addr) => (
+                      <option key={addr.id} value={addr.id.toString()}>
+                        {addr.first_name} {addr.last_name} - {addr.address1}, {addr.city} ({addr.country})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
                 <div>

@@ -466,3 +466,108 @@ export async function validateVatId(
   }
   return res.json();
 }
+
+// ─── Address & Ticket Management ─────────────────────────────────────────────
+
+export interface CustomerAddressDb {
+  id: number;
+  customer_id: number;
+  first_name: string;
+  last_name: string;
+  address1: string;
+  address2: string | null;
+  city: string;
+  zip: string;
+  country: string;
+  phone: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function getRetailerAddresses(email: string, code: string): Promise<CustomerAddressDb[]> {
+  const params = new URLSearchParams({ email, code });
+  const res = await fetch(`${API_BASE}/retailer/addresses?${params.toString()}`, {
+    headers: { "Accept": "application/json" }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Laden der Adressen.");
+  }
+  const body = await res.json();
+  return body.data || [];
+}
+
+export async function createRetailerAddress(
+  email: string,
+  code: string,
+  addressData: Omit<CustomerAddressDb, "id" | "customer_id">
+): Promise<CustomerAddressDb> {
+  const res = await fetch(`${API_BASE}/retailer/addresses`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ email, code, ...addressData }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Erstellen der Adresse.");
+  }
+  const body = await res.json();
+  return body.data;
+}
+
+export async function updateRetailerAddress(
+  email: string,
+  code: string,
+  addressId: number,
+  addressData: Omit<CustomerAddressDb, "id" | "customer_id">
+): Promise<CustomerAddressDb> {
+  const res = await fetch(`${API_BASE}/retailer/addresses/${addressId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ email, code, ...addressData }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Aktualisieren der Adresse.");
+  }
+  const body = await res.json();
+  return body.data;
+}
+
+export async function deleteRetailerAddress(email: string, code: string, addressId: number): Promise<boolean> {
+  const params = new URLSearchParams({ email, code });
+  const res = await fetch(`${API_BASE}/retailer/addresses/${addressId}?${params.toString()}`, {
+    method: "DELETE",
+    headers: { "Accept": "application/json" },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Löschen der Adresse.");
+  }
+  const body = await res.json();
+  return !!body.success;
+}
+
+export interface CreateSupportTicketPayload {
+  category: string;
+  issue_type?: string;
+  order_id?: string;
+  description: string;
+}
+
+export async function createSupportTicket(
+  email: string,
+  code: string,
+  payload: CreateSupportTicketPayload
+): Promise<{ success: boolean; message: string; ticket_id?: string }> {
+  const res = await fetch(`${API_BASE}/retailer/support-ticket`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ email, code, ...payload }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Senden des Support-Tickets.");
+  }
+  return res.json();
+}
