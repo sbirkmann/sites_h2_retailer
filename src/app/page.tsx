@@ -16,7 +16,7 @@ import Image from "next/image";
 import CartDrawer from "../components/CartDrawer";
 import ContactWidget from "../components/ContactWidget";
 import { useCart } from "../lib/CartContext";
-import { fetchProducts, type ApiProduct } from "../lib/api";
+import { fetchProducts, getPublicDownloads, type ApiProduct, type MarketingDownload } from "../lib/api";
 import { apiProductToDisplay } from "../lib/products";
 import { SectionBadge } from "@/components/shared/section-badge";
 import { TextReveal, FadeUp, BlurIn, GlowButton, FloatingElement } from "@/components/home/animations";
@@ -568,9 +568,16 @@ function ProductCard({ product, delay }: { product: ApiProduct; delay: number })
               <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-6 h-6 flex items-center justify-center rounded-md text-navy/60 hover:text-navy transition-colors cursor-pointer">
                 <Minus size={14} />
               </button>
-              <div className="flex-1 text-center">
-                <span className="font-gothic text-sm font-bold text-navy">{qty}</span>
-                <span className="font-gothic text-xs ml-1 text-navy/50">Karton{qty !== 1 ? "s" : ""}</span>
+              <div className="flex-1 text-center flex flex-col items-center justify-center">
+                <div className="leading-none">
+                  <span className="font-gothic text-sm font-bold text-navy">{qty}</span>
+                  <span className="font-gothic text-xs ml-1 text-navy/50">Karton{qty !== 1 ? "s" : ""}</span>
+                </div>
+                {unitsPerBox > 1 && (
+                  <div className="font-gothic text-[10px] text-navy/40 mt-0.5 leading-none">
+                    {qty * unitsPerBox} Einheiten
+                  </div>
+                )}
               </div>
               <button onClick={() => setQty(qty + 1)} className="w-6 h-6 flex items-center justify-center rounded-md text-navy/60 hover:text-navy transition-colors cursor-pointer">
                 <Plus size={14} />
@@ -687,17 +694,17 @@ function ProductsSection({ apiProducts, loading, error }: { apiProducts: ApiProd
 // ──────────────────────────────────────────────────────────────────────────────
 
 const marketingCategories = [
-  { icon: ImageIcon, title: "Produktbilder", description: "Hochauflösende Produktfotos für alle Kanäle – Dosen, Flaschen und Quetschbeutel.", items: ["PNG transparent", "JPG Studio", "3D Renders", "Freisteller"], available: true },
-  { icon: Share2, title: "Social Media", description: "Fertige Vorlagen für Instagram, Facebook und LinkedIn – Stories, Posts und Reels.", items: ["Instagram Stories", "Feed Posts", "LinkedIn Banner", "Reels Vorlagen"], available: true },
-  { icon: FileText, title: "Flyer & Broschüren", description: "Druckfertige Materialien für deinen Point of Sale und Beratungsgespräche.", items: ["A5 Flyer", "A4 Broschüre", "Produktdatenblatt", "Preisliste"], available: true },
-  { icon: Printer, title: "Poster & Roll-Ups", description: "Großformatige Druckmaterialien für Messen, Studios und Praxen.", items: ["A1 Poster", "A0 Poster", "Roll-Up 85×200", "Aufsteller"], available: false },
-  { icon: Monitor, title: "Logos & Brand Assets", description: "Alle AWAKE Logos und Markenelemente in verschiedenen Formaten und Farben.", items: ["SVG Vektoren", "PNG transparent", "Dark Version", "Light Version"], available: true },
-  { icon: BookOpen, title: "Produktinformationen", description: "Detaillierte Produktbeschreibungen, Inhaltsstoffe und Anwendungsempfehlungen.", items: ["Produktpass", "Inhaltsstoffe", "FAQ Dokument", "Anwendungsguide"], available: true },
-  { icon: FlaskConical, title: "Studienübersicht", description: "Wissenschaftliche Grundlagen zu molekularem Wasserstoff – für deine Beratungsgespräche.", items: ["Studienübersicht", "Forschungsstand", "Wirkungsmechanismen", "Zitierbare Quellen"], available: true },
-  { icon: Award, title: "Lifestyle Bilder", description: "Premium Lifestyle-Fotografie für eine authentische Markenkommunikation.", items: ["Fitness & Sport", "Wellness & Spa", "Business & Longevity", "Outdoor"], available: false },
+  { key: "produktbilder", icon: ImageIcon, title: "Produktbilder", description: "Hochauflösende Produktfotos für alle Kanäle – Dosen, Flaschen und Quetschbeutel.", items: ["PNG transparent", "JPG Studio", "3D Renders", "Freisteller"], available: true },
+  { key: "social_media", icon: Share2, title: "Social Media", description: "Fertige Vorlagen für Instagram, Facebook und LinkedIn – Stories, Posts und Reels.", items: ["Instagram Stories", "Feed Posts", "LinkedIn Banner", "Reels Vorlagen"], available: true },
+  { key: "flyer", icon: FileText, title: "Flyer & Broschüren", description: "Druckfertige Materialien für deinen Point of Sale und Beratungsgespräche.", items: ["A5 Flyer", "A4 Broschüre", "Produktdatenblatt", "Preisliste"], available: true },
+  { key: "poster", icon: Printer, title: "Poster & Roll-Ups", description: "Großformatige Druckmaterialien für Messen, Studios und Praxen.", items: ["A1 Poster", "A0 Poster", "Roll-Up 85×200", "Aufsteller"], available: false },
+  { key: "logos", icon: Monitor, title: "Logos & Brand Assets", description: "Alle AWAKE Logos und Markenelemente in verschiedenen Formaten und Farben.", items: ["SVG Vektoren", "PNG transparent", "Dark Version", "Light Version"], available: true },
+  { key: "product_info", icon: BookOpen, title: "Produktinformationen", description: "Detaillierte Produktbeschreibungen, Inhaltsstoffe und Anwendungsempfehlungen.", items: ["Produktpass", "Inhaltsstoffe", "FAQ Dokument", "Anwendungsguide"], available: true },
+  { key: "studies", icon: FlaskConical, title: "Studienübersicht", description: "Wissenschaftliche Grundlagen zu molekularem Wasserstoff – für deine Beratungsgespräche.", items: ["Studienübersicht", "Forschungsstand", "Wirkungsmechanismen", "Zitierbare Quellen"], available: true },
+  { key: "lifestyle", icon: Award, title: "Lifestyle Bilder", description: "Premium Lifestyle-Fotografie für eine authentische Markenkommunikation.", items: ["Fitness & Sport", "Wellness & Spa", "Business & Longevity", "Outdoor"], available: false },
 ];
 
-function MarketingCard({ cat, delay }: { cat: (typeof marketingCategories)[0]; delay: number }) {
+function MarketingCard({ cat, delay, downloads }: { cat: (typeof marketingCategories)[0]; delay: number; downloads: MarketingDownload[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const Icon = cat.icon;
   useEffect(() => {
@@ -708,6 +715,15 @@ function MarketingCard({ cat, delay }: { cat: (typeof marketingCategories)[0]; d
     observer.observe(el); return () => observer.disconnect();
   }, [delay]);
 
+  const catDownloads = downloads.filter(d => d.category === cat.key && d.file_url);
+  const isAvailable = cat.available || catDownloads.length > 0;
+
+  const handleDownload = () => {
+    if (catDownloads.length > 0 && catDownloads[0].file_url) {
+      window.open(catDownloads[0].file_url, '_blank');
+    }
+  };
+
   return (
     <div ref={ref} className="rounded-2xl p-5 flex flex-col gap-4 bg-white border border-navy/10 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300"
       style={{ opacity: 0, transform: "translateY(24px)", transition: `opacity 0.6s cubic-bezier(0.23,1,0.32,1) ${delay}ms, transform 0.6s cubic-bezier(0.23,1,0.32,1) ${delay}ms, box-shadow 0.3s ease-out` }}>
@@ -715,7 +731,7 @@ function MarketingCard({ cat, delay }: { cat: (typeof marketingCategories)[0]; d
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#f5f4ef]">
           <Icon size={20} className="text-navy" />
         </div>
-        {!cat.available && (
+        {!isAvailable && (
           <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-gothic text-xs font-bold uppercase tracking-wide bg-[#f5f4ef] text-navy/40 border border-navy/10">
             <Lock size={10} /> Bald
           </span>
@@ -730,9 +746,13 @@ function MarketingCard({ cat, delay }: { cat: (typeof marketingCategories)[0]; d
           ))}
         </div>
       </div>
-      <button className={`flex items-center justify-center gap-2 py-2.5 rounded-full font-gothic text-sm font-bold uppercase tracking-wide transition-all duration-200 mt-auto cursor-pointer ${cat.available ? "bg-cta-yellow text-navy hover:bg-[#f5e751]" : "bg-[#f5f4ef] text-navy/30 border border-navy/10 cursor-not-allowed"}`}>
-        {cat.available ? <Download size={15} /> : <Lock size={15} />}
-        {cat.available ? "Herunterladen" : "Bald verfügbar"}
+      <button 
+        onClick={handleDownload}
+        disabled={!isAvailable || catDownloads.length === 0}
+        className={`flex items-center justify-center gap-2 py-2.5 rounded-full font-gothic text-sm font-bold uppercase tracking-wide transition-all duration-200 mt-auto cursor-pointer w-full ${isAvailable && catDownloads.length > 0 ? "bg-cta-yellow text-navy hover:bg-[#f5e751]" : "bg-[#f5f4ef] text-navy/30 border border-navy/10 cursor-not-allowed"}`}
+      >
+        {isAvailable && catDownloads.length > 0 ? <Download size={15} /> : <Lock size={15} />}
+        {isAvailable && catDownloads.length > 0 ? "Herunterladen" : "Bald verfügbar"}
       </button>
     </div>
   );
@@ -740,12 +760,24 @@ function MarketingCard({ cat, delay }: { cat: (typeof marketingCategories)[0]; d
 
 function MarketingSection() {
   const headingRef = useRef<HTMLDivElement>(null);
+  const [downloads, setDownloads] = useState<MarketingDownload[]>([]);
+
   useEffect(() => {
     const el = headingRef.current; if (!el) return;
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) { el.style.opacity = "1"; el.style.transform = "translateY(0)"; observer.disconnect(); }
     }, { threshold: 0.1 });
     observer.observe(el); return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    getPublicDownloads()
+      .then((data) => {
+        setDownloads(data);
+      })
+      .catch((err) => {
+        console.error("Fehler beim Laden der öffentlichen Downloads:", err);
+      });
   }, []);
 
   return (
@@ -762,7 +794,7 @@ function MarketingSection() {
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {marketingCategories.map((cat, i) => <MarketingCard key={cat.title} cat={cat} delay={i * 60} />)}
+          {marketingCategories.map((cat, i) => <MarketingCard key={cat.key} cat={cat} delay={i * 60} downloads={downloads} />)}
         </div>
       </div>
     </section>

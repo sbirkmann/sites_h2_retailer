@@ -122,6 +122,13 @@ export default function Navbar() {
                     Support
                     <span className="absolute bottom-1 left-0 w-0 h-[1.5px] bg-[#173A57] transition-all duration-300 group-hover:w-full" />
                   </Link>
+                  <Link
+                    href="/portal"
+                    className="text-[#173A57] text-[15px] font-bold font-gothic relative group py-2 flex items-center gap-1 transition-colors hover:text-[#173A57]/60 lg:text-[16px] cursor-pointer"
+                  >
+                    Händler-Portal
+                    <span className="absolute bottom-1 left-0 w-0 h-[1.5px] bg-[#173A57] transition-all duration-300 group-hover:w-full" />
+                  </Link>
                 </nav>
 
                 {/* Shopping Cart Button */}
@@ -177,9 +184,16 @@ export default function Navbar() {
               <Link
                 href="/#support"
                 onClick={handleLinkClick}
-                className="text-[#173A57] text-[18px] font-bold font-gothic uppercase tracking-wide hover:text-[#173A57]/60 py-2 cursor-pointer"
+                className="text-[#173A57] text-[18px] font-bold font-gothic uppercase tracking-wide hover:text-[#173A57]/60 py-2 border-b border-border/20 cursor-pointer"
               >
                 Support
+              </Link>
+              <Link
+                href="/portal"
+                onClick={handleLinkClick}
+                className="text-[#173A57] text-[18px] font-bold font-gothic uppercase tracking-wide hover:text-[#173A57]/60 py-2 cursor-pointer"
+              >
+                Händler-Portal
               </Link>
             </div>
           </div>

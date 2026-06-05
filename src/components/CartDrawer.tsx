@@ -4,7 +4,15 @@ import { useState, useEffect } from "react";
 import { useCart } from "../lib/CartContext";
 import CheckoutModal from "./CheckoutModal";
 
-export default function CartDrawer() {
+import { type RetailerInfo } from "../lib/api";
+
+export default function CartDrawer({
+  prefilledCustomer,
+  initialCode
+}: {
+  prefilledCustomer?: RetailerInfo;
+  initialCode?: string;
+}) {
   const { items, totalItems, subtotal, totalDeposit, totalShipping, grandTotal, updateQuantity, removeItem, closeCart, isCartOpen } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   
@@ -111,7 +119,13 @@ export default function CartDrawer() {
         )}
       </aside>
 
-      {checkoutOpen && <CheckoutModal onClose={() => setCheckoutOpen(false)} />}
+      {checkoutOpen && (
+        <CheckoutModal 
+          onClose={() => setCheckoutOpen(false)} 
+          prefilledCustomer={prefilledCustomer}
+          initialCode={initialCode}
+        />
+      )}
     </>
   );
 }

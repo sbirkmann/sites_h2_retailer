@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useCart } from "../lib/CartContext";
-import { sendLoginCode, verifyLoginCode, createOrder, fetchProducts, type Customer, type OrderItem } from "../lib/api";
+import { useState, useEffect } from "react";
+import { useCart, calculateShippingCost } from "../lib/CartContext";
+import { sendLoginCode, verifyLoginCode, createOrder, fetchProducts, getCachedVatRates, validateVatId, type OrderItem, type RetailerInfo } from "../lib/api";
 
 // ─── VAT rates by country ───────────────────────────────────────────────────
 const VAT_RATES: Record<string, { label: string; rate: number }> = {
@@ -36,77 +36,221 @@ const labelStyle: React.CSSProperties = {
   textTransform: "uppercase", letterSpacing: "0.5px",
 };
 
-export default function CheckoutModal({ onClose }: { onClose: () => void }) {
-  const { items, subtotal, totalDeposit, clearCart } = useCart();
+const btnStyle: React.CSSProperties = {
+  backgroundColor: "#173A57",
+  color: "#fff",
+  border: "none",
+  borderRadius: "12px",
+  padding: "14px 24px",
+  fontSize: "15px",
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: "background-color 0.2s, opacity 0.2s",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center",
+  textDecoration: "none",
+};
+
+const btnSecondaryStyle: React.CSSProperties = {
+  backgroundColor: "rgba(23, 58, 87, 0.08)",
+  color: "#173A57",
+  border: "none",
+  borderRadius: "12px",
+  padding: "14px 24px",
+  fontSize: "15px",
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: "background-color 0.2s, opacity 0.2s",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center",
+  textDecoration: "none",
+};
+
+function getCountryCodeFromAddress(address: RetailerInfo["address"]): string {
+  if (!address || !address.country_code) return "DE";
+  const rawCountry = address.country_code;
+  if (rawCountry.length > 2) {
+    const map: Record<string, string> = {
+      germany: "DE", deutschland: "DE",
+      austria: "AT", österreich: "AT",
+      switzerland: "CH", schweiz: "CH",
+      netherlands: "NL", niederlande: "NL", holland: "NL",
+      belgium: "BE", belgien: "BE",
+      france: "FR", frankreich: "FR",
+      italy: "IT", italien: "IT",
+      spain: "ES", spanien: "ES",
+      poland: "PL", polen: "PL",
+      "united states": "US", usa: "US",
+      "united kingdom": "GB", großbritannien: "GB", uk: "GB", england: "GB",
+      denmark: "DK", dänemark: "DK",
+      sweden: "SE", schweden: "SE",
+      norway: "NO", norwegen: "NO",
+      finland: "FI", finnland: "FI",
+      "czech republic": "CZ", czechia: "CZ", tschechien: "CZ",
+    };
+    return map[rawCountry.toLowerCase()] || "DE";
+  }
+  return rawCountry;
+}
+
+export default function CheckoutModal({ 
+  onClose,
+  prefilledCustomer,
+  initialCode
+}: { 
+  onClose: () => void;
+  prefilledCustomer?: RetailerInfo;
+  initialCode?: string;
+}) {
+  const { items, subtotal, totalDeposit, clearCart, refreshCartProducts } = useCart();
   const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
+  const hasPrefilled = !!(prefilledCustomer && initialCode);
+
   // ─── State ──────────────────────────────────────────────────────────────
-  const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [customerExists, setCustomerExists] = useState(false);
-  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [step, setStep] = useState<Step>(hasPrefilled ? "address" : "email");
+  const [email, setEmail] = useState(prefilledCustomer?.email || "");
+  const [code, setCode] = useState(initialCode || "");
+  const [customerExists, setCustomerExists] = useState(hasPrefilled);
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState("");
+  const [vatRatesMap, setVatRatesMap] = useState<Record<string, { label: string; rate: number }>>(VAT_RATES);
 
   // Address form
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [company, setCompany] = useState("");
-  const [phone, setPhone] = useState("");
-  const [street, setStreet] = useState("");
-  const [zip, setZip] = useState("");
-  const [city, setCity] = useState("");
-  const [countryCode, setCountryCode] = useState("DE");
+  const [firstName, setFirstName] = useState(prefilledCustomer?.first_name || "");
+  const [lastName, setLastName] = useState(prefilledCustomer?.last_name || "");
+  const [company, setCompany] = useState(prefilledCustomer?.info_name || "");
+  const [phone, setPhone] = useState(prefilledCustomer?.phone || prefilledCustomer?.info_tel || "");
+  const [street, setStreet] = useState(prefilledCustomer?.address?.street || "");
+  const [zip, setZip] = useState(prefilledCustomer?.address?.zip || "");
+  const [city, setCity] = useState(prefilledCustomer?.address?.city || "");
+  const [countryCode, setCountryCode] = useState(getCountryCodeFromAddress(prefilledCustomer?.address));
   const [refCode, setRefCode] = useState("");
   const [refCodeIsPrefilled, setRefCodeIsPrefilled] = useState(false);
+  const [vatId, setVatId] = useState(prefilledCustomer?.vat_id || "");
+  const [vatChecked, setVatChecked] = useState(prefilledCustomer?.vat_checked || false);
+  const [vatLoading, setVatLoading] = useState(false);
+
+  const handleValidateVat = async (customVatId = vatId) => {
+    const val = customVatId.trim();
+    if (!val) return;
+    setVatLoading(true);
+    setError("");
+    try {
+      const res = await validateVatId(
+        email.trim(),
+        code.trim(),
+        val,
+        company.trim(),
+        firstName.trim(),
+        lastName.trim()
+      );
+      if (res.valid) {
+        setVatChecked(true);
+      } else {
+        setVatChecked(false);
+        setError(res.reason || "USt-IdNr. konnte nicht verifiziert werden.");
+      }
+    } catch (err: unknown) {
+      setVatChecked(false);
+      setError(err instanceof Error ? err.message : "Fehler bei der USt-IdNr.-Validierung.");
+    } finally {
+      setVatLoading(false);
+    }
+  };
+
+  // Refresh cart products on mount/change if authenticated via portal
+  useEffect(() => {
+    if (prefilledCustomer) {
+      const cc = getCountryCodeFromAddress(prefilledCustomer.address);
+      fetchProducts(cc, prefilledCustomer.email)
+        .then((apiProducts) => {
+          refreshCartProducts(apiProducts);
+        })
+        .catch((err) => {
+          console.error("Fehler beim Laden der kundenspezifischen Preise im Portal-Checkout:", err);
+        });
+    }
+  }, [prefilledCustomer, refreshCartProducts]);
 
   // Initialize refCode from localStorage
   useEffect(() => {
     const storedRef = localStorage.getItem("refCode");
     if (storedRef) {
-      setRefCode(storedRef);
-      setRefCodeIsPrefilled(true);
+      const timer = setTimeout(() => {
+        setRefCode(storedRef);
+        setRefCodeIsPrefilled(true);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, []);
 
   // Live shipping cost based on selected country
   const [shippingForCountry, setShippingForCountry] = useState<number>(0);
-  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingLoading, setShippingLoading] = useState(true);
 
   // Fetch shipping cost when country changes
   useEffect(() => {
     let cancelled = false;
-    setShippingLoading(true);
-    fetchProducts(countryCode)
+    const timer = setTimeout(() => {
+      setShippingLoading(true);
+    }, 0);
+    fetchProducts(countryCode, email)
       .then((apiProducts) => {
         if (cancelled) return;
-        // Calculate total shipping cost
-        let sumShipping = 0;
-        for (const cartItem of items) {
+        
+        // Update VAT rates map from API cache
+        const apiVatRates = getCachedVatRates();
+        if (apiVatRates && Object.keys(apiVatRates).length > 0) {
+          setVatRatesMap(apiVatRates);
+        }
+
+        // Calculate total shipping cost using the new helper
+        const calculationItems = items.map((cartItem) => {
           const apiMatch = apiProducts.find(
             (ap) => ap.id === cartItem.product.id && ap.type === cartItem.product.type
           );
-          if (apiMatch && apiMatch.shipping_cost != null) {
-            sumShipping += apiMatch.shipping_cost * cartItem.quantity;
-          }
-        }
+          return {
+            product: apiMatch ? {
+              id: apiMatch.id,
+              type: apiMatch.type,
+              shipping_cost: apiMatch.shipping_cost,
+              shipping_config_id: apiMatch.shipping_config_id,
+              shipping_combine: apiMatch.shipping_combine,
+              shipping_tiers: apiMatch.shipping_tiers,
+              shipping_multiplier: apiMatch.shipping_multiplier,
+              raw_shipping_cost: apiMatch.raw_shipping_cost,
+              raw_shipping_tiers: apiMatch.raw_shipping_tiers,
+            } : cartItem.product,
+            quantity: cartItem.quantity,
+          };
+        });
+        const sumShipping = calculateShippingCost(calculationItems);
         setShippingForCountry(sumShipping);
       })
       .catch(() => {
         if (!cancelled) {
           // Fallback to cart's static shipping
-          const sumStatic = items.reduce((sum, i) => sum + (i.product.shipping_cost ?? 0) * i.quantity, 0);
+          const sumStatic = calculateShippingCost(items);
           setShippingForCountry(sumStatic);
         }
       })
       .finally(() => { if (!cancelled) setShippingLoading(false); });
-    return () => { cancelled = true; };
-  }, [countryCode, items]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [countryCode, items, email]);
 
   // ─── VAT calculation ────────────────────────────────────────────────────
-  const vatRate = VAT_RATES[countryCode]?.rate ?? 0.19;
+  const isVatExempt = !!(vatId && vatChecked && countryCode !== "DE");
+  const vatRate = isVatExempt ? 0 : (vatRatesMap[countryCode]?.rate ?? 0.19);
   const netTotal = subtotal + shippingForCountry;
   const vatAmount = netTotal * vatRate;
   const grossTotal = netTotal + vatAmount + totalDeposit;
@@ -131,16 +275,52 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
       const res = await verifyLoginCode(email.trim(), code.trim());
       if (!res.code_valid) { setError("Code ungültig oder abgelaufen."); setLoading(false); return; }
       if (res.customer) {
-        setCustomer(res.customer);
         setFirstName(res.customer.first_name);
         setLastName(res.customer.last_name);
         setCompany(res.customer.company || "");
         setPhone(res.customer.phone || "");
+        setVatId(res.customer.vat_id || "");
+        setVatChecked(res.customer.vat_checked || false);
+        
+        let currentCountry = countryCode;
         if (res.customer.address) {
           setStreet(res.customer.address.street);
           setZip(res.customer.address.zip);
           setCity(res.customer.address.city);
-          setCountryCode(res.customer.address.country_code || "DE");
+          
+          let rawCountry = res.customer.address.country_code || "DE";
+          if (rawCountry.length > 2) {
+            const map: Record<string, string> = {
+              germany: "DE", deutschland: "DE",
+              austria: "AT", österreich: "AT",
+              switzerland: "CH", schweiz: "CH",
+              netherlands: "NL", niederlande: "NL", holland: "NL",
+              belgium: "BE", belgien: "BE",
+              france: "FR", frankreich: "FR",
+              italy: "IT", italien: "IT",
+              spain: "ES", spanien: "ES",
+              poland: "PL", polen: "PL",
+              "united states": "US", usa: "US",
+              "united kingdom": "GB", großbritannien: "GB", uk: "GB", england: "GB",
+              denmark: "DK", dänemark: "DK",
+              sweden: "SE", schweden: "SE",
+              norway: "NO", norwegen: "NO",
+              finland: "FI", finnland: "FI",
+              "czech republic": "CZ", czechia: "CZ", tschechien: "CZ",
+            };
+            rawCountry = map[rawCountry.toLowerCase()] || "DE";
+          }
+          
+          setCountryCode(rawCountry);
+          currentCountry = rawCountry;
+        }
+
+        // Fetch customer-specific prices & refresh cart
+        try {
+          const apiProducts = await fetchProducts(currentCountry, res.customer.email);
+          refreshCartProducts(apiProducts);
+        } catch (err) {
+          console.error("Fehler beim Laden der kundenspezifischen Preise:", err);
         }
       }
       setStep("address");
@@ -152,6 +332,34 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
   const handleSubmitOrder = async () => {
     if (!firstName.trim() || !lastName.trim()) { setError("Vor- und Nachname sind Pflicht."); return; }
     if (!street.trim() || !zip.trim() || !city.trim()) { setError("Bitte vollständige Adresse eingeben."); return; }
+    
+    // Auto-check VAT if entered but not checked yet
+    if (vatId.trim() && !vatChecked && countryCode !== "DE") {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await validateVatId(
+          email.trim(),
+          code.trim(),
+          vatId.trim(),
+          company.trim(),
+          firstName.trim(),
+          lastName.trim()
+        );
+        if (res.valid) {
+          setVatChecked(true);
+        } else {
+          setError(res.reason || "USt-IdNr. konnte nicht verifiziert werden. Bitte korrigieren Sie die Angabe oder entfernen Sie die USt-IdNr., um mit MwSt. zu bestellen.");
+          setLoading(false);
+          return;
+        }
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "USt-IdNr.-Überprüfung fehlgeschlagen (Server offline).");
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true); setError(""); setStep("submitting");
     try {
       const orderItems: OrderItem[] = items.map((i) => ({
@@ -171,6 +379,7 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
         zip: zip.trim(),
         city: city.trim(),
         country_code: countryCode,
+        vat_id: vatId.trim() || undefined,
         items: orderItems,
         include_shipping_cost: true,
         ref_code: refCode.trim() || undefined,
@@ -189,7 +398,7 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
   };
 
   // ─── Order Summary (shown in address step) ────────────────────────────
-  const OrderSummary = () => (
+  const renderOrderSummary = () => (
     <div style={{ backgroundColor: "rgba(23,58,87,0.03)", borderRadius: "16px", padding: "20px", marginBottom: "24px", border: "1px solid rgba(23,58,87,0.06)" }}>
       <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "14px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5 }}>Ihre Bestellung</div>
       {items.map((item) => (
@@ -202,10 +411,13 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}><span>Zwischensumme (netto)</span><span>{fmt(subtotal)}</span></div>
         {totalDeposit > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}><span>Pfand</span><span>{fmt(totalDeposit)}</span></div>}
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}>
-          <span>Versand ({VAT_RATES[countryCode]?.label || countryCode})</span>
+          <span>Versand ({vatRatesMap[countryCode]?.label || countryCode}, {(vatRate * 100).toFixed(1)}% MwSt.)</span>
           <span>{shippingLoading ? "..." : shippingForCountry > 0 ? fmt(shippingForCountry) : "Kostenfrei"}</span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}><span>MwSt. ({(vatRate * 100).toFixed(1)}%)</span><span>{fmt(vatAmount)}</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}>
+          <span>MwSt. ({(vatRate * 100).toFixed(1)}%){isVatExempt ? " (Steuerfreie innergem. Lieferung)" : ""}</span>
+          <span>{fmt(vatAmount)}</span>
+        </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "16px", marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(23,58,87,0.08)" }}><span>Gesamt (brutto)</span><span>{fmt(grossTotal)}</span></div>
       </div>
     </div>
@@ -254,7 +466,7 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
                 <label style={labelStyle}>E-Mail-Adresse</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendCode()} placeholder="ihre@email.de" style={inputStyle} autoFocus />
               </div>
-              <button className="btn" onClick={handleSendCode} disabled={loading} style={{ width: "100%", padding: "16px", fontSize: "16px", opacity: loading ? 0.6 : 1 }}>
+              <button onClick={handleSendCode} disabled={loading} style={{ ...btnStyle, width: "100%", padding: "16px", fontSize: "16px", opacity: loading ? 0.6 : 1 }}>
                 {loading ? "Sende..." : "Code senden"}
               </button>
             </>
@@ -272,8 +484,8 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
                 <input type="text" value={code} onChange={(e) => setCode(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6))} onKeyDown={(e) => e.key === "Enter" && handleVerifyCode()} placeholder="XXXXXX" maxLength={6} style={{ ...inputStyle, textAlign: "center", fontSize: "28px", letterSpacing: "8px", fontWeight: 700 }} autoFocus />
               </div>
               <div style={{ display: "flex", gap: "12px" }}>
-                <button className="btn btn-secondary" onClick={() => { setStep("email"); setError(""); }} style={{ flex: 1, padding: "14px" }}>Zurück</button>
-                <button className="btn" onClick={handleVerifyCode} disabled={loading} style={{ flex: 2, padding: "14px", opacity: loading ? 0.6 : 1 }}>
+                <button onClick={() => { setStep("email"); setError(""); }} style={{ ...btnSecondaryStyle, flex: 1, padding: "14px" }}>Zurück</button>
+                <button onClick={handleVerifyCode} disabled={loading} style={{ ...btnStyle, flex: 2, padding: "14px", opacity: loading ? 0.6 : 1 }}>
                   {loading ? "Prüfe..." : "Bestätigen"}
                 </button>
               </div>
@@ -283,7 +495,7 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
           {/* ── Step: Address + Order Summary ───────────────────────── */}
           {step === "address" && (
             <>
-              <OrderSummary />
+              {renderOrderSummary()}
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
                 <div>
@@ -305,6 +517,61 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
                   <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} style={inputStyle} />
                 </div>
               </div>
+
+              {/* VAT ID Field */}
+              <div style={{ marginBottom: "16px" }}>
+                <label style={labelStyle}>USt-IdNr. (USt-ID für steuerfreie Lieferung)</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input 
+                    type="text" 
+                    value={vatId} 
+                    onChange={(e) => {
+                      setVatId(e.target.value);
+                      setVatChecked(false);
+                    }} 
+                    readOnly={!!(prefilledCustomer?.vat_id && prefilledCustomer?.vat_checked)}
+                    placeholder="z.B. ATU12345678" 
+                    style={{ 
+                      ...inputStyle, 
+                      backgroundColor: (prefilledCustomer?.vat_id && prefilledCustomer?.vat_checked) ? "rgba(23, 58, 87, 0.08)" : "#fff",
+                      cursor: (prefilledCustomer?.vat_id && prefilledCustomer?.vat_checked) ? "not-allowed" : "text",
+                      flex: 1
+                    }} 
+                  />
+                  {countryCode !== "DE" && !(prefilledCustomer?.vat_id && prefilledCustomer?.vat_checked) && (
+                    <button
+                      type="button"
+                      onClick={() => handleValidateVat()}
+                      disabled={vatLoading || !vatId.trim()}
+                      style={{
+                        ...btnSecondaryStyle,
+                        padding: "0 16px",
+                        fontSize: "14px",
+                        opacity: (!vatId.trim() || vatLoading) ? 0.6 : 1,
+                        cursor: (!vatId.trim() || vatLoading) ? "not-allowed" : "pointer"
+                      }}
+                    >
+                      {vatLoading ? "Prüfe..." : "Prüfen"}
+                    </button>
+                  )}
+                </div>
+                {vatId && countryCode !== "DE" && (
+                  <div style={{ marginTop: "6px", fontSize: "13px" }}>
+                    {vatLoading && <span style={{ color: "#173A57", opacity: 0.7 }}>USt-IdNr. wird überprüft...</span>}
+                    {!vatLoading && vatChecked && <span style={{ color: "#28a745", fontWeight: 600 }}>✓ Gültig (0% USt. berechnet)</span>}
+                    {!vatLoading && !vatChecked && vatId.trim() && (
+                      <span style={{ color: "#dc3545" }}>
+                        Nicht verifiziert. Bitte prüfen Sie Ihre USt-IdNr.
+                      </span>
+                    )}
+                  </div>
+                )}
+                {countryCode === "DE" && vatId.trim() && (
+                  <div style={{ marginTop: "6px", fontSize: "13px", color: "rgba(23, 58, 87, 0.5)" }}>
+                    Hinweis: Bei Lieferung innerhalb Deutschlands fällt immer die gesetzliche MwSt. an.
+                  </div>
+                )}
+              </div>
               <div style={{ marginBottom: "16px" }}>
                 <label style={labelStyle}>Straße + Hausnr. *</label>
                 <input type="text" value={street} onChange={(e) => setStreet(e.target.value)} style={inputStyle} />
@@ -321,7 +588,7 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
                 <div>
                   <label style={labelStyle}>Land *</label>
                   <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                    {Object.entries(VAT_RATES).map(([cc, { label }]) => (
+                    {Object.entries(vatRatesMap).map(([cc, { label }]) => (
                       <option key={cc} value={cc}>{label}</option>
                     ))}
                   </select>
@@ -333,8 +600,8 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
               </div>
 
               <div style={{ display: "flex", gap: "12px" }}>
-                <button className="btn btn-secondary" onClick={() => { setStep("code"); setError(""); }} style={{ flex: 1, padding: "14px" }}>Zurück</button>
-                <button className="btn" onClick={handleSubmitOrder} disabled={loading} style={{ flex: 2, padding: "14px", fontSize: "16px" }}>
+                <button onClick={() => { setStep("code"); setError(""); }} style={{ ...btnSecondaryStyle, flex: 1, padding: "14px" }}>Zurück</button>
+                <button onClick={handleSubmitOrder} disabled={loading} style={{ ...btnStyle, flex: 2, padding: "14px", fontSize: "16px", opacity: loading ? 0.6 : 1 }}>
                   Zahlungspflichtig bestellen
                 </button>
               </div>
@@ -358,7 +625,7 @@ export default function CheckoutModal({ onClose }: { onClose: () => void }) {
               </div>
               <h3 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "12px" }}>Bestellung erfolgreich!</h3>
               <p style={{ opacity: 0.7, fontSize: "15px", lineHeight: 1.6, marginBottom: "28px" }}>Sie werden jetzt zur Zahlung weitergeleitet.</p>
-              <a href={paymentUrl} className="btn" style={{ display: "inline-flex", padding: "16px 40px", fontSize: "16px" }} rel="noopener">Jetzt bezahlen</a>
+              <a href={paymentUrl} style={{ ...btnStyle, display: "inline-flex", padding: "16px 40px", fontSize: "16px" }} rel="noopener">Jetzt bezahlen</a>
               <p style={{ marginTop: "16px", fontSize: "13px", opacity: 0.5 }}>
                 Falls keine Weiterleitung erfolgt,{" "}
                 <a href={paymentUrl} style={{ textDecoration: "underline" }}>hier klicken</a>.

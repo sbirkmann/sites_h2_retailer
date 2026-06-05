@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import type { DisplayProduct } from "./products";
+import type { ApiProduct } from "./api";
 
 // ─── Cart Item ──────────────────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ interface CartContextValue {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+  refreshCartProducts: (apiProducts: ApiProduct[]) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -66,6 +68,98 @@ function getTierPrice(product: DisplayProduct, qty: number): number {
     return parseFloat((p * 50).toFixed(2));
   }
   return 0;
+}
+
+export interface ShippingCalculationItem {
+  product: {
+    id: number;
+    type: "product" | "bundle";
+    shipping_cost: number | null;
+    shipping_config_id?: string | number | null;
+    shipping_combine?: boolean;
+    shipping_tiers?: { from: number; to: number | null; price: number }[];
+    shipping_multiplier?: number;
+    raw_shipping_cost?: number;
+    raw_shipping_tiers?: { from: number; to: number | null; price: number }[];
+  };
+  quantity: number;
+}
+
+export function calculateShippingCost(items: ShippingCalculationItem[]): number {
+  let totalCost = 0.0;
+  
+  // Group items by shipping_config_id
+  const groups: Record<string | number, {
+    combine: boolean;
+    tiers: { from: number; to: number | null; price: number }[];
+    baseCost: number;
+    totalUnits: number;
+    items: ShippingCalculationItem[];
+  }> = {};
+
+  for (const item of items) {
+    if (item.quantity <= 0) continue;
+
+    const configId = item.product.shipping_config_id ?? `default-${Math.random()}`;
+    const multiplier = item.product.shipping_multiplier ?? 1;
+    const units = item.quantity * multiplier;
+
+    if (!groups[configId]) {
+      groups[configId] = {
+        combine: item.product.shipping_combine ?? false,
+        tiers: item.product.raw_shipping_tiers ?? item.product.shipping_tiers ?? [],
+        baseCost: item.product.raw_shipping_cost ?? item.product.shipping_cost ?? 0,
+        totalUnits: 0,
+        items: [],
+      };
+    }
+    
+    groups[configId].totalUnits += units;
+    groups[configId].items.push(item);
+  }
+
+  for (const configId in groups) {
+    const group = groups[configId];
+    const tiers = group.tiers;
+    const combine = group.combine;
+
+    if (!tiers || tiers.length === 0) {
+      totalCost += group.baseCost * group.totalUnits;
+      continue;
+    }
+
+    const findTierPrice = (units: number): number | null => {
+      for (const tier of tiers) {
+        const from = tier.from;
+        const to = tier.to;
+        if (units >= from && (to === null || units <= to)) {
+          return tier.price;
+        }
+      }
+      return null;
+    };
+
+    if (combine) {
+      const tierPrice = findTierPrice(group.totalUnits);
+      if (tierPrice !== null) {
+        totalCost += tierPrice;
+      } else {
+        totalCost += group.baseCost * group.totalUnits;
+      }
+    } else {
+      for (const item of group.items) {
+        const itemUnits = item.quantity * (item.product.shipping_multiplier ?? 1);
+        const tierPrice = findTierPrice(itemUnits);
+        if (tierPrice !== null) {
+          totalCost += tierPrice;
+        } else {
+          totalCost += (item.product.shipping_cost ?? 0) * item.quantity;
+        }
+      }
+    }
+  }
+
+  return Math.round(totalCost * 100) / 100;
 }
 
 // ─── Provider ───────────────────────────────────────────────────────────────
@@ -114,6 +208,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => setItems([]), []);
 
+  const refreshCartProducts = useCallback((apiProducts: ApiProduct[]) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        const matchingApiProduct = apiProducts.find(
+          (ap) => ap.id === item.product.id && ap.type === item.product.type
+        );
+        if (!matchingApiProduct) return item;
+
+        const updatedProduct = {
+          ...item.product,
+          ...matchingApiProduct,
+          shipping_cost: matchingApiProduct.shipping_cost,
+          shipping_config_id: matchingApiProduct.shipping_config_id,
+          shipping_combine: matchingApiProduct.shipping_combine,
+          shipping_tiers: matchingApiProduct.shipping_tiers,
+          shipping_multiplier: matchingApiProduct.shipping_multiplier,
+          raw_shipping_cost: matchingApiProduct.raw_shipping_cost,
+          raw_shipping_tiers: matchingApiProduct.raw_shipping_tiers,
+          deposit: matchingApiProduct.deposit,
+          tiers: matchingApiProduct.tiers,
+        };
+
+        const tierPrice = getTierPrice(updatedProduct, item.quantity) || matchingApiProduct.retailer_price;
+        return {
+          ...item,
+          product: {
+            ...updatedProduct,
+            retailer_price: tierPrice,
+          },
+        };
+      })
+    );
+  }, []);
+
   // ─── Computed Values ────────────────────────────────────────────────────
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -124,17 +252,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     0
   );
 
-  // totalDeposit = Pfand pro Karton × Anzahl Kartons
+  // totalDeposit = Pfand pro Dose × Dosen pro Karton × Anzahl Kartons
   const totalDeposit = items.reduce(
-    (sum, i) => sum + i.product.deposit * i.quantity,
+    (sum, i) => {
+      const multiplier = i.product.unitsPerItem || i.product.units_per_item || 1;
+      return sum + i.product.deposit * multiplier * i.quantity;
+    },
     0
   );
 
   // Versandkosten
-  const totalShipping = items.reduce(
-    (sum, i) => sum + (i.product.shipping_cost ?? 0) * i.quantity,
-    0
-  );
+  const totalShipping = calculateShippingCost(items);
 
   const grandTotal = subtotal + totalDeposit + totalShipping;
 
@@ -155,6 +283,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         openCart: () => setIsCartOpen(true),
         closeCart: () => setIsCartOpen(false),
         toggleCart: () => setIsCartOpen((v) => !v),
+        refreshCartProducts,
       }}
     >
       {children}

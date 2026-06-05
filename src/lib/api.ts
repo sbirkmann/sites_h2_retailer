@@ -1,4 +1,4 @@
-const API_BASE = "https://h2vitaldash.x900.3az.de/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://h2vitaldash.x900.3az.de/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -16,6 +16,12 @@ export interface ApiProduct {
   retailer_price: number;   // Basispreis pro Karton (netto)
   deposit: number;          // Pfand pro Karton
   shipping_cost: number | null;
+  shipping_config_id?: string | number | null;
+  shipping_combine?: boolean;
+  shipping_tiers?: { from: number; to: number | null; price: number }[];
+  shipping_multiplier?: number;
+  raw_shipping_cost?: number;
+  raw_shipping_tiers?: { from: number; to: number | null; price: number }[];
   // ── Reichhaltige Produktdaten (von API) ──────────────────────────────────
   subtitle?: string;
   description?: string;
@@ -42,6 +48,14 @@ export interface Customer {
   phone: string | null;
   company: string | null;
   address: CustomerAddress | null;
+  vat_id?: string | null;
+  vat_checked?: boolean;
+  vat_document_path?: string | null;
+  is_affiliate?: boolean;
+  referral_code?: string | null;
+  referral_link?: string | null;
+  recruiter_code?: string | null;
+  recruiter_link?: string | null;
 }
 
 export interface SendCodeResponse {
@@ -55,6 +69,71 @@ export interface VerifyCodeResponse {
   code_valid: boolean;
   customer_exists: boolean;
   customer: Customer | null;
+}
+
+export interface RetailerInfo {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  is_retailer: boolean;
+  info_name: string | null;
+  info_website: string | null;
+  info_tel: string | null;
+  info_retaileraddress: string | null;
+  show_map: boolean;
+  map_lat: number | null;
+  map_lng: number | null;
+  vat_id?: string | null;
+  vat_checked?: boolean;
+  vat_document_path?: string | null;
+  is_affiliate?: boolean;
+  referral_code?: string | null;
+  referral_link?: string | null;
+  recruiter_code?: string | null;
+  recruiter_link?: string | null;
+  address?: {
+    street: string | null;
+    zip: string | null;
+    city: string | null;
+    country_code: string | null;
+  } | null;
+}
+
+export interface RetailerAccessCodeResponse {
+  success: boolean;
+  message: string;
+  code?: string;
+}
+
+export interface RetailerCheckCodeResponse {
+  success: boolean;
+  code_valid: boolean;
+  customer_exists: boolean;
+  customer?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string | null;
+    company: string | null;
+    vat_id?: string | null;
+    vat_checked?: boolean;
+    vat_document_path?: string | null;
+    address: {
+      street: string | null;
+      zip: string | null;
+      city: string | null;
+      country_code: string | null;
+    } | null;
+  };
+  message?: string;
+}
+
+export interface RetailerInfoResponse {
+  success: boolean;
+  data?: RetailerInfo;
+  message?: string;
 }
 
 export interface OrderItem {
@@ -75,6 +154,7 @@ export interface CreateOrderPayload {
   zip?: string;
   city?: string;
   country_code?: string;
+  vat_id?: string;
   items: OrderItem[];
   include_shipping_cost?: boolean;
   ref_code?: string;
@@ -94,13 +174,49 @@ export interface CreateOrderResponse {
   status: string;
 }
 
+// Cache for VAT rates loaded from the API
+let cachedVatRates: Record<string, { label: string; rate: number }> = {};
+
+export function getCachedVatRates(): Record<string, { label: string; rate: number }> {
+  return cachedVatRates;
+}
+
 // ─── API Functions ──────────────────────────────────────────────────────────
 
-export async function fetchProducts(countryCode = "DE"): Promise<ApiProduct[]> {
-  const res = await fetch(`${API_BASE}/retailer/products?country_code=${countryCode}`);
+export async function fetchProducts(countryCode = "DE", email?: string): Promise<ApiProduct[]> {
+  let url = `${API_BASE}/retailer/products?country_code=${countryCode}`;
+  if (email) {
+    url += `&email=${encodeURIComponent(email)}`;
+  }
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Produkte konnten nicht geladen werden.");
   const data = await res.json();
-  return data.products;
+
+  if (data.vat_rates) {
+    cachedVatRates = data.vat_rates;
+  }
+  
+  // Sanitize shipping_multiplier because the remote API might return vonexio_product_multiplicator (e.g. 30)
+  // instead of own_shipping_units_per_package (which is 1 per box).
+  const products = (data.products || []).map((prod: ApiProduct) => {
+    let multiplier = prod.shipping_multiplier ?? 1;
+    if (prod.type === "product") {
+      if (multiplier > 10) {
+        multiplier = 1;
+      }
+    } else if (prod.type === "bundle") {
+      if (multiplier >= 28) {
+        multiplier = Math.round(multiplier / 30);
+        if (multiplier < 1) multiplier = 1;
+      }
+    }
+    return {
+      ...prod,
+      shipping_multiplier: multiplier,
+    };
+  });
+
+  return products;
 }
 
 export async function sendLoginCode(email: string): Promise<SendCodeResponse> {
@@ -135,6 +251,218 @@ export async function createOrder(payload: CreateOrderPayload): Promise<CreateOr
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || "Bestellung fehlgeschlagen.");
+  }
+  return res.json();
+}
+
+export async function getRetailerPortalAccessCode(email: string): Promise<RetailerAccessCodeResponse> {
+  const res = await fetch(`${API_BASE}/getRetailerPortalAccessCode`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Anfordern des Zugangscodes.");
+  }
+  return res.json();
+}
+
+export async function checkRetailerPortalAccessCode(email: string, code: string): Promise<RetailerCheckCodeResponse> {
+  const res = await fetch(`${API_BASE}/checkRetailerPortalAccessCode`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ email, code }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Ungültiger oder abgelaufener Zugangscode.");
+  }
+  return res.json();
+}
+
+export async function getRetailerInfo(email: string, code: string): Promise<RetailerInfoResponse> {
+  const params = new URLSearchParams({ email, code });
+  const res = await fetch(`${API_BASE}/retailer/info?${params.toString()}`, {
+    headers: { "Accept": "application/json" }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Laden des Händler-Profils.");
+  }
+  return res.json();
+}
+
+export async function updateRetailerInfo(
+  payload: {
+    email: string;
+    code: string;
+    info_name?: string;
+    info_website?: string;
+    info_tel?: string;
+    info_retaileraddress?: string;
+    show_map?: boolean;
+    map_lat?: number;
+    map_lng?: number;
+  }
+): Promise<RetailerInfoResponse> {
+  const res = await fetch(`${API_BASE}/retailer/info`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Aktualisieren des Händler-Profils.");
+  }
+  return res.json();
+}
+
+export interface RetailerTrackingItem {
+  tracking_number: string;
+  link?: string | null;
+  provider?: string | null;
+  delivery_note?: string | null;
+}
+
+export interface RetailerOrderItem {
+  id: number;
+  product_id: number | null;
+  bunde_product_id: number | null;
+  quantity: number;
+  unit_price: number | null;
+  is_bundle_item: boolean;
+  parent_item_id: number | null;
+  product_name: string;
+}
+
+export interface RetailerOrder {
+  id: number;
+  created_at: string | null;
+  status: string;
+  is_released: boolean;
+  is_paid: boolean;
+  payment_amount: number | null;
+  payment_token: string | null;
+  can_pay_stripe: boolean;
+  easybill_document_id: number | null;
+  is_finalized: boolean;
+  vonexio_tracking_id: string | null;
+  vonexio_tracking_list: RetailerTrackingItem[] | null;
+  shipped_at: string | null;
+  shipping_date: string | null;
+  notes: string | null;
+  items: RetailerOrderItem[];
+}
+
+export interface MarketingDownload {
+  id: number;
+  title: string;
+  description: string | null;
+  file_path: string | null;
+  file_type_label: string;
+  file_size: number | null;
+  category: string;
+  visibility: string;
+  file_url: string | null;
+}
+
+export async function getRetailerOrders(email: string, code: string): Promise<RetailerOrder[]> {
+  const params = new URLSearchParams({ email, code });
+  const res = await fetch(`${API_BASE}/retailer/orders?${params.toString()}`, {
+    headers: { "Accept": "application/json" }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Laden der Bestellungen.");
+  }
+  const body = await res.json();
+  return body.data || [];
+}
+
+export async function getRetailerDownloads(email: string, code: string): Promise<MarketingDownload[]> {
+  const params = new URLSearchParams({ email, code });
+  const res = await fetch(`${API_BASE}/retailer/downloads?${params.toString()}`, {
+    headers: { "Accept": "application/json" }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Laden der Downloads.");
+  }
+  const body = await res.json();
+  return body.data || [];
+}
+
+export async function getPublicDownloads(): Promise<MarketingDownload[]> {
+  const res = await fetch(`${API_BASE}/public/downloads`, {
+    headers: { "Accept": "application/json" }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Laden der öffentlichen Downloads.");
+  }
+  const body = await res.json();
+  return body.data || [];
+}
+
+export async function uploadVatDocument(
+  email: string,
+  code: string,
+  vatId: string,
+  file: File
+): Promise<{ success: boolean; message: string; data?: { vat_id: string; vat_checked: boolean; vat_document_path: string } }> {
+  const formData = new FormData();
+  formData.append("email", email);
+  formData.append("code", code);
+  formData.append("vat_id", vatId);
+  formData.append("vat_file", file);
+
+  const res = await fetch(`${API_BASE}/retailer/vat-upload`, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Fehler beim Hochladen des USt-ID Nachweises.");
+  }
+  return res.json();
+}
+
+export interface ValidateVatResponse {
+  valid: boolean;
+  name?: string;
+  reason?: string;
+  country_code?: string;
+  vat_number?: string;
+}
+
+export async function validateVatId(
+  email: string,
+  code: string,
+  vatId: string,
+  company?: string,
+  firstName?: string,
+  lastName?: string
+): Promise<ValidateVatResponse> {
+  const res = await fetch(`${API_BASE}/retailer/validate-vat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({
+      email,
+      code,
+      vat_id: vatId,
+      company,
+      first_name: firstName,
+      last_name: lastName,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "USt-IdNr.-Validierung fehlgeschlagen.");
   }
   return res.json();
 }
