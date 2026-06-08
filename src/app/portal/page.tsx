@@ -1002,13 +1002,13 @@ export default function RetailerPortalPage() {
     <main className="mx-auto w-full max-w-[1400px] px-4 py-8 md:py-16 text-[#173A57] font-gothic">
       
       {/* ─── Hero Header ────────────────────────────────────────────────────── */}
-      <section className="mb-10 text-center md:text-left border-b border-[#173A57]/10 pb-8 relative overflow-hidden">
+      <section className="mb-10 text-center border-b border-[#173A57]/10 pb-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#FDF277]/10 rounded-full blur-3xl -z-10" />
         <h1 className="text-3xl md:text-5xl font-bold font-gothic tracking-tight uppercase mb-3 text-[#173A57]">
           Händler-Portal
         </h1>
-        <p className="text-base md:text-lg text-navy/70 max-w-2xl">
-          Willkommen im exklusiven B2B-Bereich von AWAKE. Verwalte hier deinen Eintrag auf unserer Händlerkarte und greife auf Marketingmaterialien zu.
+        <p className="text-base md:text-lg text-navy/70 max-w-3xl leading-relaxed mx-auto">
+          Willkommen im exklusiven B2B-Portal von AWAKE. Hier steht dir die gesamte Verwaltung deiner Partnerschaft zur Verfügung: Bestelle AWAKE zu attraktiven Händler-Konditionen und Staffelpreisen, passe dein Profil für unsere Händlerkarte an, greife auf aktuelle Marketingmaterialien und Werbemittel zu, verwalte deine Lieferadressen und behalte deine Bestellhistorie im Blick. Bei Fragen hilft dir unser Support-Assistent direkt weiter.
         </p>
       </section>
 
