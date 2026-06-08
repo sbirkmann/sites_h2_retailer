@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   Lock, 
   Unlock, 
@@ -238,7 +239,7 @@ function PortalProductCard({
       {/* Product Image */}
       <div className="relative h-48 flex items-center justify-center overflow-hidden flex-shrink-0 bg-[#f5f4ef]">
         {product.image ? (
-          <img src={product.image} alt={product.name} className="h-full w-full object-cover" style={{ objectPosition: "center top" }} />
+          <Image unoptimized src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" style={{ objectPosition: "center top" }} />
         ) : (
           <div className="flex flex-col items-center gap-3">
             <Package size={44} className="text-[#173A57]/20" />

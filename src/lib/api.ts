@@ -80,8 +80,9 @@ export interface RetailerInfo {
   info_name: string | null;
   info_website: string | null;
   info_tel: string | null;
-  info_retaileraddress: string | null;
+  info_retaileraddress?: string | null;
   show_map: boolean;
+  show_address?: boolean;
   map_lat: number | null;
   map_lng: number | null;
   vat_id?: string | null;
@@ -302,6 +303,7 @@ export async function updateRetailerInfo(
     info_tel?: string;
     info_retaileraddress?: string;
     show_map?: boolean;
+    show_address?: boolean;
     map_lat?: number;
     map_lng?: number;
   }
@@ -568,6 +570,35 @@ export async function createSupportTicket(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || "Fehler beim Senden des Support-Tickets.");
+  }
+  return res.json();
+}
+
+export interface RetailerApplicationPayload {
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  website?: string;
+  industry: string;
+  customIndustry?: string;
+  message?: string;
+}
+
+export interface RetailerApplicationResponse {
+  success: boolean;
+  message: string;
+}
+
+export async function submitRetailerApplication(payload: RetailerApplicationPayload): Promise<RetailerApplicationResponse> {
+  const res = await fetch(`${API_BASE}/retailer/application`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Bewerbung konnte nicht gesendet werden.");
   }
   return res.json();
 }

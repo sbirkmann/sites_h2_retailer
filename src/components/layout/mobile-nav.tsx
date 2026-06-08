@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import Link from 'next/link';
 
 interface MobileSubItem {
   label: string;
@@ -112,13 +113,13 @@ export function MobileNav() {
             aria-label="Navigation">
             
               <div className="p-4 flex justify-between items-center border-b border-gray-100">
-                <a
+                <Link
                 href="/"
                 onClick={close}
                 className="font-gothic font-bold uppercase tracking-wider text-nav-text text-[28px] leading-none cursor-pointer">
                 
                   AWAKE
-                </a>
+                </Link>
                 <button
                 onClick={close}
                 className="flex h-10 w-10 items-center justify-center rounded-full text-nav-text cursor-pointer transition-colors hover:bg-navy/5 active:bg-navy/10"

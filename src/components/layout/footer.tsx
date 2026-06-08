@@ -3,6 +3,7 @@
 import React from 'react'
 import { Shield, Truck, Award } from 'lucide-react'
 import { useCookieConsent } from '@/lib/cookie-consent'
+import Link from 'next/link'
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -67,11 +68,11 @@ export function Footer() {
         <div className="py-10 sm:py-12 md:py-14">
           <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1fr] gap-10 lg:gap-8">
             <div>
-              <a href="/" className="inline-block cursor-pointer">
+              <Link href="/" className="inline-block cursor-pointer">
                 <span className="font-rust font-bold uppercase tracking-wider text-[42px] text-white">
                   AWAKE
                 </span>
-              </a>
+              </Link>
               <p className="font-gothic text-[15px] text-white/70 mt-1 mb-6 max-w-[280px] leading-relaxed">
                 Das erste Wasserstoffgetränk Deutschlands. Natürlich. Innovativ. Belebend.
               </p>
@@ -137,12 +138,12 @@ export function Footer() {
                   </a>
                 </li>
                 <li>
-                  <a
+                  <Link
                     href="/#erfahrungsberichte"
                     className="text-white/65 hover:text-cta-yellow transition-colors font-gothic text-[14px] cursor-pointer"
                   >
                     Erfahrungsberichte
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

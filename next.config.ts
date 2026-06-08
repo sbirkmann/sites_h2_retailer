@@ -3,7 +3,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['subbly-production-builder.nyc3.cdn.digitaloceanspaces.com'],
+    domains: ['subbly-production-builder.nyc3.cdn.digitaloceanspaces.com', 'h2-awake.de'],
   },
   /* config options here */
 };

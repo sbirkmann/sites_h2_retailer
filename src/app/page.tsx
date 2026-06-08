@@ -15,17 +15,16 @@ import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
 import CartDrawer from "../components/CartDrawer";
 import ContactWidget from "../components/ContactWidget";
-import { fetchProducts, type ApiProduct } from "../lib/api";
+import { fetchProducts, submitRetailerApplication, type ApiProduct } from "../lib/api";
 import { SectionBadge } from "@/components/shared/section-badge";
 import { TextReveal, FadeUp, BlurIn, GlowButton, FloatingElement } from "@/components/home/animations";
 import { useScrollParallax } from "@/hooks/use-gsap-scroll";
+import slideOneImage from "../../public/images/hero-slide-1.webp";
+import slideTwoImage from "../../public/images/awake-bottle.webp";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // HERO SECTION – Website-Stil, Retailer-Inhalte
 // ──────────────────────────────────────────────────────────────────────────────
-
-const slideOneImage = "/images/hero-slide-1.avif";
-const slideTwoImage = "https://subbly-production-builder.nyc3.cdn.digitaloceanspaces.com/projects/01KKKA91702C19QGM77B03DASV/uploads/e0404161-0015-4ed3-8eff-8f97c005a472-awake-bottle.png";
 
 const heroSlides = [
   { ctaLabel: "Jetzt Dosen bestellen", ctaHref: "#produkte", imageSrc: slideOneImage, imageAlt: "AWAKE Wasserstoff Getränkedosen" },
@@ -177,8 +176,10 @@ function HeroSection() {
 
   // Client-only: generate random values after hydration to avoid SSR mismatch
   useEffect(() => {
-    setParticles(generateParticles(8));
-    setBubbles(generateBubbles(20));
+    requestAnimationFrame(() => {
+      setParticles(generateParticles(8));
+      setBubbles(generateBubbles(20));
+    });
   }, []);
 
   useEffect(() => {
@@ -462,7 +463,7 @@ function ProductCard({ product, delay }: { product: ApiProduct; delay: number })
       {/* Produktbild */}
       <div className="relative h-56 flex items-center justify-center overflow-hidden flex-shrink-0 bg-[#f5f4ef]">
         {product.image ? (
-          <img src={product.image} alt={product.name} className="h-full w-full object-cover" style={{ objectPosition: "center top" }} />
+          <Image unoptimized src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" style={{ objectPosition: "center top" }} />
         ) : (
           <div className="flex flex-col items-center gap-3">
             <Package size={56} className="text-navy/20" />
@@ -945,13 +946,23 @@ function RetailerRegistrationSection() {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+    try {
+      await submitRetailerApplication({
+        companyName: formData.companyName,
+        contactName: formData.contactName,
+        email: formData.email,
+        phone: formData.phone,
+        website: formData.website || undefined,
+        industry: formData.industry,
+        customIndustry: formData.industry === "Sonstiges" ? formData.customIndustry : undefined,
+        message: formData.message || undefined,
+      });
       setIsSubmitted(true);
       setFormData({
         companyName: "",
@@ -963,7 +974,12 @@ function RetailerRegistrationSection() {
         customIndustry: "",
         message: "",
       });
-    }, 1200);
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.";
+      setError(errMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -1189,6 +1205,12 @@ function RetailerRegistrationSection() {
                         className="w-full px-4 py-3 bg-[#f5f4ef]/30 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 text-sm font-gothic text-navy placeholder:text-navy/35 resize-none"
                       />
                     </div>
+
+                    {error && (
+                      <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
+                        {error}
+                      </div>
+                    )}
 
                     <button
                       type="submit"

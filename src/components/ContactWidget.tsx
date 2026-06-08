@@ -11,7 +11,9 @@ export default function ContactWidget() {
   useEffect(() => {
     const storedRef = localStorage.getItem('refCode');
     if (storedRef) {
-      setRefCode(storedRef);
+      requestAnimationFrame(() => {
+        setRefCode(storedRef);
+      });
     }
   }, []);
 

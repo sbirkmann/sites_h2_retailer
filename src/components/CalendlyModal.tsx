@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
+import julianSchneider from "../../public/images/julian-schneider.webp";
 
 interface CalendlyModalProps {
   isOpen: boolean;
@@ -44,13 +46,13 @@ export default function CalendlyModal({ isOpen, onClose }: CalendlyModalProps) {
         {/* Right Side: CEO Profile */}
         <div className="desktop-only" style={{ flex: '1', minWidth: '300px', backgroundColor: 'var(--bg-light)', padding: '40px 30px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
           <div style={{ width: '150px', height: '150px', borderRadius: '50%', overflow: 'hidden', border: '4px solid #fff', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', marginBottom: '24px' }}>
-            <img src="https://h2-awake.de/events/julian-schneider.jpg" alt="Julian Schneider" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=Julian+Schneider&background=173A57&color=fff&size=150' }} />
+            <Image src={julianSchneider} alt="Julian Schneider" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--bg-dark)', marginBottom: '4px' }}>Julian Schneider</h3>
           <div style={{ color: 'var(--primary-color)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '13px', marginBottom: '16px' }}>B2B Experte</div>
           <div style={{ width: '40px', height: '3px', backgroundColor: 'var(--accent-yellow)', marginBottom: '20px' }}></div>
           <p style={{ color: 'var(--text-dark)', opacity: 0.8, lineHeight: 1.6, fontSize: "15px", fontStyle: "italic" }}>
-            "Als Gesundheitsexperte und Wasserstoff-Pionier zeige ich dir, wie du AWAKE optimal in deinem Business einsetzt und deine Margen maximierst."
+            {"Als Gesundheitsexperte und Wasserstoff-Pionier zeige ich dir, wie du AWAKE optimal in deinem Business einsetzt und deine Margen maximierst."}
           </p>
         </div>
 
