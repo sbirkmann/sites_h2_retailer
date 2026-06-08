@@ -38,9 +38,32 @@ const centuryGothic = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "AWAKE Partner Portal – Exklusiver B2B Bereich",
+  metadataBase: new URL("https://h2-awake.de"),
+  title: "AWAKE Händler & B2B-Partner werden | H₂-Wasser in Europa",
   description:
-    "Offizielles AWAKE Partner Portal. Produkte bestellen, Marketingmaterialien laden und dein Geschäft mit Europas erstem trinkfertigem Wasserstoffwasser ausbauen.",
+    "Werde AWAKE B2B-Partner: Biete deinen Kunden das Nr. 1 H₂-Wasser in Europa an. Attraktive Händler-Konditionen für Fitness, Longevity, Praxen & Hotels.",
+  openGraph: {
+    title: "AWAKE Händler & B2B-Partner werden | H₂-Wasser in Europa",
+    description: "Werde AWAKE B2B-Partner: Biete deinen Kunden das Nr. 1 H₂-Wasser in Europa an. Attraktive Händler-Konditionen für Fitness, Longevity, Praxen & Hotels.",
+    url: "https://h2-awake.de/partner",
+    siteName: "AWAKE B2B Partner Portal",
+    images: [
+      {
+        url: "/awake-logo.png",
+        width: 1200,
+        height: 630,
+        alt: "AWAKE Logo",
+      },
+    ],
+    locale: "de_DE",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AWAKE Händler & B2B-Partner werden | H₂-Wasser in Europa",
+    description: "Werde AWAKE B2B-Partner: Biete deinen Kunden das Nr. 1 H₂-Wasser in Europa an. Attraktive Händler-Konditionen für Fitness, Longevity, Praxen & Hotels.",
+    images: ["/awake-logo.png"],
+  },
 };
 
 //Never remove this.

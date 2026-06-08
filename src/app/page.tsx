@@ -362,9 +362,9 @@ function HeroSection() {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const dashboardCards = [
-  { icon: ShoppingCart, title: "Produkte bestellen", description: "Dosen, Flaschen und Quetschbeutel – einfach und schnell nachbestellen.", cta: "Zur Bestellung", href: "#produkte", highlight: true },
-  { icon: Download, title: "Marketing Center", description: "Produktbilder, Social Media Vorlagen, Flyer, Poster und mehr.", cta: "Materialien laden", href: "#marketing", highlight: false },
-  { icon: MapPin, title: "Retailer Locator", description: "Verwalte deinen Eintrag auf der AWAKE Händlerkarte.", cta: "Eintrag verwalten", href: "#retailer-locator", highlight: false },
+  { icon: ShoppingCart, title: "Sortiment", description: "Dosen, Flaschen und Quetschbeutel – das richtige Gebinde für deine Kunden.", cta: "Sortiment entdecken", href: "#produkte", highlight: true },
+  { icon: Download, title: "Marketing Center", description: "Produktbilder, Social Media Vorlagen, Flyer, Poster und mehr.", cta: "Mehr erfahren", href: "#marketing", highlight: false },
+  { icon: MapPin, title: "Retailer Locator", description: "Verwalte deinen Eintrag auf der AWAKE Händlerkarte.", cta: "Jetzt entdecken", href: "#retailer-locator", highlight: false },
   { icon: Users, title: "Partnerprogramm", description: "Empfehle AWAKE weiter und sichere dir attraktive Provisionen.", cta: "Mehr erfahren", href: "https://h2-awake.de/partner", highlight: false },
   { icon: HeadphonesIcon, title: "Support", description: "Direkter Kontakt zu deinem persönlichen AWAKE Ansprechpartner.", cta: "Kontakt aufnehmen", href: "https://h2-awake.de/contact", highlight: false },
 ];
