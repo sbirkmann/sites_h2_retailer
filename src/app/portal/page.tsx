@@ -1135,7 +1135,7 @@ export default function RetailerPortalPage() {
             <div className="mt-8 pt-6 border-t border-navy/5 text-center">
               <p className="text-xs text-navy/60 leading-relaxed font-gothic">
                 Du willst Händler werden? Wende dich an unseren{" "}
-                <Link href="/#support" className="text-[#173A57] font-semibold underline hover:text-[#2563EB] transition-colors">
+                <Link href="mailto:support@h2-awake.de" className="text-[#173A57] font-semibold underline hover:text-[#2563EB] transition-colors">
                   Kundendienst
                 </Link>.
               </p>

@@ -116,7 +116,7 @@ export default function Navbar() {
                     <span className="absolute bottom-1 left-0 w-0 h-[1.5px] bg-[#173A57] transition-all duration-300 group-hover:w-full" />
                   </Link>
                   <Link
-                    href="/#support"
+                    href="mailto:support@h2-awake.de"
                     className="text-[#173A57] text-[15px] font-bold font-gothic relative group py-2 flex items-center gap-1 transition-colors hover:text-[#173A57]/60 lg:text-[16px] cursor-pointer"
                   >
                     Support
@@ -182,7 +182,7 @@ export default function Navbar() {
                 Partnerprogramm
               </Link>
               <Link
-                href="/#support"
+                href="mailto:support@h2-awake.de"
                 onClick={handleLinkClick}
                 className="text-[#173A57] text-[18px] font-bold font-gothic uppercase tracking-wide hover:text-[#173A57]/60 py-2 border-b border-border/20 cursor-pointer"
               >

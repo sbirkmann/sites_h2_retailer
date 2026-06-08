@@ -148,7 +148,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link
-                    href="/#support"
+                    href="mailto:support@h2-awake.de"
                     className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
                   >
                     Support

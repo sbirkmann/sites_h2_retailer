@@ -15,9 +15,7 @@ import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
 import CartDrawer from "../components/CartDrawer";
 import ContactWidget from "../components/ContactWidget";
-import { useCart } from "../lib/CartContext";
 import { fetchProducts, getPublicDownloads, type ApiProduct, type MarketingDownload } from "../lib/api";
-import { apiProductToDisplay } from "../lib/products";
 import { SectionBadge } from "@/components/shared/section-badge";
 import { TextReveal, FadeUp, BlurIn, GlowButton, FloatingElement } from "@/components/home/animations";
 import { useScrollParallax } from "@/hooks/use-gsap-scroll";
@@ -243,17 +241,13 @@ function HeroSection() {
 
               <FadeUp delay={350}>
                 <div className="mt-7 flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:justify-start">
-                  <AnimatePresence mode="wait">
-                    <motion.div key={activeSlide} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ type: "spring", stiffness: 300, damping: 25 }}>
-                      <GlowButton className="rounded-full">
-                        <a href={currentSlide.ctaHref}
-                          className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-cta-yellow px-7 py-3.5 text-center font-gothic text-[14px] font-bold uppercase tracking-wide text-hero-text sm:px-9 sm:py-4 sm:text-[16px]">
-                          {currentSlide.ctaLabel} <ArrowRight className="h-4 w-4" />
-                        </a>
-                      </GlowButton>
-                    </motion.div>
-                  </AnimatePresence>
-                  <a href="#dashboard"
+                  <GlowButton className="rounded-full">
+                    <a href="#haendler-werden"
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-cta-yellow px-7 py-3.5 text-center font-gothic text-[14px] font-bold uppercase tracking-wide text-hero-text sm:px-9 sm:py-4 sm:text-[16px]">
+                      Jetzt Händler werden <ArrowRight className="h-4 w-4" />
+                    </a>
+                  </GlowButton>
+                  <a href="/portal"
                     className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-navy/25 bg-white/60 backdrop-blur-sm px-7 py-3.5 font-gothic text-[14px] font-bold uppercase tracking-wide text-navy hover:border-navy/50 hover:bg-white transition-all sm:px-9 sm:py-4 sm:text-[16px]">
                     Partner Dashboard
                   </a>
@@ -372,7 +366,7 @@ const dashboardCards = [
   { icon: Download, title: "Marketing Center", description: "Produktbilder, Social Media Vorlagen, Flyer, Poster und mehr.", cta: "Materialien laden", href: "#marketing", highlight: false },
   { icon: MapPin, title: "Retailer Locator", description: "Verwalte deinen Eintrag auf der AWAKE Händlerkarte.", cta: "Eintrag verwalten", href: "#retailer-locator", highlight: false },
   { icon: Users, title: "Partnerprogramm", description: "Empfehle AWAKE weiter und sichere dir attraktive Provisionen.", cta: "Mehr erfahren", href: "#partnerprogramm", highlight: false },
-  { icon: HeadphonesIcon, title: "Support", description: "Direkter Kontakt zu deinem persönlichen AWAKE Ansprechpartner.", cta: "Kontakt aufnehmen", href: "#support", highlight: false },
+  { icon: HeadphonesIcon, title: "Support", description: "Direkter Kontakt zu deinem persönlichen AWAKE Ansprechpartner.", cta: "Kontakt aufnehmen", href: "mailto:support@h2-awake.de", highlight: false },
 ];
 
 function DashboardCard({ card, delay }: { card: (typeof dashboardCards)[0]; delay: number }) {
@@ -387,7 +381,13 @@ function DashboardCard({ card, delay }: { card: (typeof dashboardCards)[0]; dela
 
   const Icon = card.icon;
   return (
-    <div ref={ref} onClick={() => { if (card.href.startsWith("#")) { document.querySelector(card.href)?.scrollIntoView({ behavior: "smooth" }); } }}
+    <div ref={ref} onClick={() => { 
+      if (card.href.startsWith("#")) { 
+        document.querySelector(card.href)?.scrollIntoView({ behavior: "smooth" }); 
+      } else {
+        window.location.href = card.href;
+      }
+    }}
       className={`group rounded-2xl p-6 flex flex-col gap-4 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${card.highlight ? "bg-navy text-white shadow-[0_8px_30px_-12px_rgba(23,58,87,0.4)]" : "bg-white border border-navy/10 shadow-sm hover:border-navy/25"}`}
       style={{ opacity: 0, transform: "translateY(24px)", transition: `opacity 0.6s cubic-bezier(0.23,1,0.32,1) ${delay}ms, transform 0.6s cubic-bezier(0.23,1,0.32,1) ${delay}ms, box-shadow 0.3s ease-out` }}>
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.highlight ? "bg-cta-yellow" : "bg-[#f5f4ef]"}`}>
@@ -439,8 +439,6 @@ function DashboardSection() {
 // ──────────────────────────────────────────────────────────────────────────────
 
 function ProductCard({ product, delay }: { product: ApiProduct; delay: number }) {
-  const { addItem } = useCart();
-  const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState<"benefits" | "usecases" | "targets">("benefits");
   const ref = useRef<HTMLDivElement>(null);
 
@@ -452,22 +450,7 @@ function ProductCard({ product, delay }: { product: ApiProduct; delay: number })
     observer.observe(el); return () => observer.disconnect();
   }, [delay]);
 
-  const tiers = product.tiers ?? [];
   const unitsPerBox = product.units_per_item ?? 1;
-  const activeTierIndex = tiers.findIndex((t) => qty >= t.min && (t.max === null || qty <= t.max));
-  const activeTier = tiers[activeTierIndex] ?? { min: 1, max: null, price: product.retailer_price };
-  const pricePerKarton = activeTier.price;
-  const pricePerUnit = unitsPerBox > 0 ? pricePerKarton / unitsPerBox : pricePerKarton;
-  const productTotal = pricePerKarton * qty;
-  const depositTotal = product.deposit * qty;
-  const grandTotal = productTotal + depositTotal;
-  const hasDeposit = product.deposit > 0;
-
-  const handleAddToCart = () => {
-    const displayProduct = apiProductToDisplay(product, { retailer_price: pricePerKarton });
-    addItem(displayProduct, qty);
-  };
-
   const tabItems = activeTab === "benefits" ? product.benefits ?? [] : activeTab === "usecases" ? product.use_cases ?? [] : product.targets ?? [];
 
   return (
@@ -505,35 +488,6 @@ function ProductCard({ product, delay }: { product: ApiProduct; delay: number })
           <p className="font-gothic text-sm leading-relaxed mb-4 text-navy/65">{product.description}</p>
         )}
 
-        {/* Staffelpreise */}
-        {tiers.length > 0 && (
-          <div className="rounded-xl p-4 mb-4 bg-[#f5f4ef] border border-navy/8">
-            <div className="flex items-center gap-1.5 mb-3 text-navy/50">
-              <TrendingDown size={12} />
-              <span className="font-gothic text-xs font-bold uppercase tracking-widest">Staffelpreise / Karton</span>
-            </div>
-            <div className="space-y-1.5">
-              {tiers.map((tier, i) => {
-                const isActive = i === activeTierIndex;
-                const label = tier.max === null ? `ab ${tier.min} Karton${tier.min !== 1 ? "s" : ""}` : `${tier.min}–${tier.max} Karton${tier.max !== 1 ? "s" : ""}`;
-                return (
-                  <div key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? "bg-navy text-white" : "bg-white border border-navy/10"}`}>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${isActive ? "bg-cta-yellow" : "bg-navy/10"}`}>
-                        {isActive && <Check size={9} className="text-navy" />}
-                      </div>
-                      <span className={`font-gothic text-xs font-medium ${isActive ? "text-white" : "text-navy/60"}`}>{label}</span>
-                    </div>
-                    <span className={`font-gothic text-sm font-bold ${isActive ? "text-cta-yellow" : "text-navy/50"}`}>
-                      {tier.price.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Tabs */}
         {(product.benefits?.length || product.use_cases?.length || product.targets?.length) ? (
           <div className="mb-4">
@@ -561,76 +515,12 @@ function ProductCard({ product, delay }: { product: ApiProduct; delay: number })
         <div className="flex-1" />
         <hr className="my-4 border-navy/10" />
 
-        {/* Mengenauswahl */}
+        {/* Action Button */}
         <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3 rounded-xl px-4 py-2.5 flex-1 bg-[#f5f4ef] border border-navy/10">
-              <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-6 h-6 flex items-center justify-center rounded-md text-navy/60 hover:text-navy transition-colors cursor-pointer">
-                <Minus size={14} />
-              </button>
-              <div className="flex-1 text-center flex flex-col items-center justify-center">
-                <div className="leading-none">
-                  <span className="font-gothic text-sm font-bold text-navy">{qty}</span>
-                  <span className="font-gothic text-xs ml-1 text-navy/50">Karton{qty !== 1 ? "s" : ""}</span>
-                </div>
-                {unitsPerBox > 1 && (
-                  <div className="font-gothic text-[10px] text-navy/40 mt-0.5 leading-none">
-                    {qty * unitsPerBox} Einheiten
-                  </div>
-                )}
-              </div>
-              <button onClick={() => setQty(qty + 1)} className="w-6 h-6 flex items-center justify-center rounded-md text-navy/60 hover:text-navy transition-colors cursor-pointer">
-                <Plus size={14} />
-              </button>
-            </div>
-
-            <div className="rounded-xl px-4 py-2.5 text-right bg-[#f5f4ef] border border-navy/10 min-w-[90px]">
-              <div className="font-gothic text-xs text-navy/50">Gesamt</div>
-              <div className="font-gothic text-sm font-bold text-navy">
-                {productTotal.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €
-              </div>
-            </div>
-          </div>
-
-          {hasDeposit && (
-            <div className="flex items-center justify-between px-3 py-2 rounded-lg font-gothic text-xs bg-[#f5f4ef] border border-navy/10">
-              <span className="text-navy/60">♻ Pfand</span>
-              <span className="text-navy font-semibold">
-                +{depositTotal.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €
-                <span className="text-navy/40"> ({product.deposit.toLocaleString("de-DE", { minimumFractionDigits: 2 })} € / Karton)</span>
-              </span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between px-3 py-2 rounded-lg font-gothic text-xs bg-green-50 border border-green-200/60">
-            <span className="text-green-700">🚚 Versand</span>
-            <span className="text-green-700 font-bold">
-              {product.shipping_cost ? `${product.shipping_cost.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €` : "Kostenlos"}
-            </span>
-          </div>
-
-          {hasDeposit && (
-            <div className="flex items-center justify-between px-3 py-2 rounded-lg font-gothic text-xs font-semibold bg-white border border-navy/15">
-              <span className="text-navy/60">Gesamt inkl. Pfand</span>
-              <span className="text-navy">{grandTotal.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €</span>
-            </div>
-          )}
-
-          {tiers.length > 0 && (
-            <div className="font-gothic text-xs text-center text-navy/40">
-              {pricePerKarton.toLocaleString("de-DE", { minimumFractionDigits: 2 })} € × {qty} Karton{qty !== 1 ? "s" : ""}
-              {unitsPerBox > 1 && ` · ${pricePerUnit.toLocaleString("de-DE", { minimumFractionDigits: 2 })} € / Stk.`}
-            </div>
-          )}
-
-          <button onClick={handleAddToCart}
+          <a href="#haendler-werden"
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-gothic text-sm font-bold uppercase tracking-wide bg-cta-yellow text-navy hover:bg-[#f5e751] hover:shadow-[0_12px_30px_-12px_rgba(253,242,119,0.7)] transition-all duration-200 cursor-pointer">
-            <ShoppingCart size={15} /> In den Warenkorb
-          </button>
-
-          <p className="font-gothic text-xs text-center text-navy/35">
-            Alle Preise zzgl. MwSt. · Pfand wird separat ausgewiesen
-          </p>
+            Jetzt Händler werden
+          </a>
         </div>
       </div>
     </div>
@@ -654,10 +544,10 @@ function ProductsSection({ apiProducts, loading, error }: { apiProducts: ApiProd
         <div ref={headingRef} className="mb-12" style={{ opacity: 0, transform: "translateY(24px)", transition: "opacity 0.6s cubic-bezier(0.23,1,0.32,1), transform 0.6s cubic-bezier(0.23,1,0.32,1)" }}>
           <SectionBadge className="mb-4">Produktkatalog</SectionBadge>
           <h2 className="font-gothic text-[28px] font-bold uppercase leading-[1.05] text-navy sm:text-[36px] lg:text-[44px] mt-3">
-            Produkte <span className="text-awake-blue">nachbestellen</span>
+            Unser <span className="text-awake-blue">Sortiment</span>
           </h2>
           <p className="font-gothic text-[15px] leading-relaxed text-navy/65 mt-3 max-w-xl sm:text-[17px]">
-            Wähle deine Produkte und lege sie direkt in den Warenkorb. Die Staffelpreise passen sich automatisch je nach Menge an.
+            Entdecke das exklusive AWAKE Produktsortiment. Werde jetzt Händler, um Zugriff auf B2B-Konditionen, Staffelpreise und direkte Bestellungen zu erhalten.
           </p>
         </div>
 
@@ -1035,84 +925,252 @@ function ComingSoonSection() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// VISION + SUPPORT
+// RETAILER REGISTRATION FORM
 // ──────────────────────────────────────────────────────────────────────────────
 
-const supportContacts = [
-  { icon: BarChart3, department: "Vertrieb", description: "Bestellungen, Konditionen, Staffelpreise", contact: "support@h2-awake.de" },
-  { icon: MessageSquare, department: "Marketing", description: "Materialien, Co-Marketing, Kampagnen", contact: "support@h2-awake.de" },
-  { icon: Truck, department: "Logistik", description: "Lieferung, Tracking, Retouren", contact: "support@h2-awake.de" },
-  { icon: Package, department: "Produktfragen", description: "Inhaltsstoffe, Lagerung, Wissenschaft", contact: "support@h2-awake.de" },
-];
+function RetailerRegistrationSection() {
+  const [formData, setFormData] = useState({
+    companyName: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    message: "",
+  });
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-const futureFunctions = [
-  "Bestellhistorie & Rechnungen", "Echtzeit-Tracking", "Download Center",
-  "Retailer Locator Verwaltung", "Schulungsbereich & Produktwissen",
-  "Webinar-Bereich", "Lead-Weiterleitung", "Empfehlungs-Dashboard",
-  "Umsatz-Analytics", "Persönlicher Account Manager",
-];
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setLoading(false);
+      setIsSubmitted(true);
+      setFormData({
+        companyName: "",
+        contactName: "",
+        email: "",
+        phone: "",
+        message: "",
+      });
+    }, 1200);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  return (
+    <section id="haendler-werden" className="py-16 lg:py-24 bg-[#f5f4ef] border-t border-navy/10">
+      <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          
+          {/* Text block */}
+          <div className="lg:col-span-5 space-y-6">
+            <SectionBadge className="mb-2">Händler werden</SectionBadge>
+            <h2 className="font-gothic text-[32px] font-bold uppercase leading-[1.05] text-navy sm:text-[40px] lg:text-[48px]">
+              Werde Teil der <span className="text-awake-blue">AWAKE</span> Bewegung
+            </h2>
+            <p className="font-gothic text-base leading-relaxed text-navy/70">
+              Profitiere von attraktiven Händlerkonditionen, schnellen Lieferzeiten und exzellentem Support. Fülle einfach das Formular aus und wir setzen uns in Kürze mit dir in Verbindung.
+            </p>
+            <div className="space-y-4 pt-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-cta-yellow flex items-center justify-center shrink-0 mt-0.5">
+                  <Check size={14} className="text-navy" />
+                </div>
+                <div>
+                  <h4 className="font-gothic text-sm font-bold text-navy uppercase">Attraktive Margen</h4>
+                  <p className="font-gothic text-xs text-navy/60">Profitable Staffelpreise für alle Bestellmengen.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-cta-yellow flex items-center justify-center shrink-0 mt-0.5">
+                  <Check size={14} className="text-navy" />
+                </div>
+                <div>
+                  <h4 className="font-gothic text-sm font-bold text-navy uppercase">Marketing-Support</h4>
+                  <p className="font-gothic text-xs text-navy/60">Kostenloses Werbematerial und transparente Marken-Assets.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-cta-yellow flex items-center justify-center shrink-0 mt-0.5">
+                  <Check size={14} className="text-navy" />
+                </div>
+                <div>
+                  <h4 className="font-gothic text-sm font-bold text-navy uppercase">Schnelle Lieferung</h4>
+                  <p className="font-gothic text-xs text-navy/60">B2B-Bestellungen werden prioritär innerhalb von 48h versendet.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Card */}
+          <div className="lg:col-span-7 bg-white rounded-3xl border border-navy/10 shadow-xl p-8 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-navy to-cta-yellow" />
+            
+            <AnimatePresence mode="wait">
+              {!isSubmitted ? (
+                <motion.div
+                  key="form"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h3 className="font-gothic text-xl font-bold uppercase mb-2 text-navy">Händlerzugang anfragen</h3>
+                  <p className="font-gothic text-xs text-navy/60 mb-6">
+                    Fülle das Formular aus. Wir prüfen deine Angaben und richten deinen Händlerzugang ein.
+                  </p>
+
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="companyName" className="block text-xs font-semibold uppercase tracking-wider text-navy/70 mb-1">
+                          Firmenname *
+                        </label>
+                        <input
+                          id="companyName"
+                          name="companyName"
+                          type="text"
+                          required
+                          value={formData.companyName}
+                          onChange={handleChange}
+                          placeholder="Muster GmbH"
+                          className="w-full px-4 py-3 bg-[#f5f4ef]/30 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 text-sm font-gothic text-navy placeholder:text-navy/35"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="contactName" className="block text-xs font-semibold uppercase tracking-wider text-navy/70 mb-1">
+                          Ansprechpartner *
+                        </label>
+                        <input
+                          id="contactName"
+                          name="contactName"
+                          type="text"
+                          required
+                          value={formData.contactName}
+                          onChange={handleChange}
+                          placeholder="Max Mustermann"
+                          className="w-full px-4 py-3 bg-[#f5f4ef]/30 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 text-sm font-gothic text-navy placeholder:text-navy/35"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-navy/70 mb-1">
+                          E-Mail-Adresse *
+                        </label>
+                        <input
+                          id="email"
+                          name="email"
+                          type="email"
+                          required
+                          value={formData.email}
+                          onChange={handleChange}
+                          placeholder="partner@beispiel.de"
+                          className="w-full px-4 py-3 bg-[#f5f4ef]/30 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 text-sm font-gothic text-navy placeholder:text-navy/35"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="phone" className="block text-xs font-semibold uppercase tracking-wider text-navy/70 mb-1">
+                          Telefonnummer *
+                        </label>
+                        <input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          required
+                          value={formData.phone}
+                          onChange={handleChange}
+                          placeholder="+49 123 456789"
+                          className="w-full px-4 py-3 bg-[#f5f4ef]/30 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 text-sm font-gothic text-navy placeholder:text-navy/35"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="message" className="block text-xs font-semibold uppercase tracking-wider text-navy/70 mb-1">
+                        Nachricht / Anmerkungen (optional)
+                      </label>
+                      <textarea
+                        id="message"
+                        name="message"
+                        rows={4}
+                        value={formData.message}
+                        onChange={handleChange}
+                        placeholder="Wie bist du auf uns aufmerksam geworden oder welche Produkte interessieren dich besonders?"
+                        className="w-full px-4 py-3 bg-[#f5f4ef]/30 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 text-sm font-gothic text-navy placeholder:text-navy/35 resize-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-[#173A57] hover:bg-[#173A57]/90 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-md active:scale-[0.98] disabled:opacity-50 text-sm cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wide font-gothic border-none"
+                    >
+                      {loading ? (
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span>Jetzt registrieren</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                  className="text-center py-8"
+                >
+                  <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-200">
+                    <Check className="h-8 w-8 text-green-600" />
+                  </div>
+                  <h3 className="font-gothic text-2xl font-bold uppercase text-navy mb-3">Vielen Dank für deine Anfrage!</h3>
+                  <p className="font-gothic text-sm text-navy/70 max-w-md mx-auto leading-relaxed">
+                    Wir haben deine Daten erhalten und prüfen deine Anfrage. Ein persönlicher AWAKE Ansprechpartner wird sich in Kürze telefonisch oder per E-Mail bei dir melden.
+                  </p>
+                  <button
+                    onClick={() => setIsSubmitted(false)}
+                    className="mt-8 px-6 py-2.5 rounded-full border border-navy/20 text-navy hover:bg-[#f5f4ef] font-bold text-xs uppercase tracking-wide transition-all cursor-pointer bg-transparent"
+                  >
+                    Neues Formular senden
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// VISION + CLOSING CTA
+// ──────────────────────────────────────────────────────────────────────────────
 
 function VisionSupportSection() {
-  const supportRef = useRef<HTMLDivElement>(null);
   const closingRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    [supportRef, closingRef].forEach((ref) => {
-      const el = ref.current; if (!el) return;
-      const observer = new IntersectionObserver(([entry]) => {
-        if (entry.isIntersecting) { el.style.opacity = "1"; el.style.transform = "translateY(0)"; observer.disconnect(); }
-      }, { threshold: 0.05 });
-      observer.observe(el);
-    });
+    const el = closingRef.current; if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { el.style.opacity = "1"; el.style.transform = "translateY(0)"; observer.disconnect(); }
+    }, { threshold: 0.05 });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   return (
     <>
-      {/* Support */}
-      <section id="support" className="py-16 lg:py-24 bg-white">
-        <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
-          <hr className="border-navy/10 mb-16" />
-          <div ref={supportRef} style={{ opacity: 0, transform: "translateY(24px)", transition: "opacity 0.6s cubic-bezier(0.23,1,0.32,1), transform 0.6s cubic-bezier(0.23,1,0.32,1)" }}>
-            <SectionBadge className="mb-4">Support</SectionBadge>
-            <h2 className="font-gothic text-[28px] font-bold uppercase leading-[1.05] text-navy sm:text-[36px] lg:text-[44px] mt-3 mb-4">
-              Dein direkter <span className="text-awake-blue">Draht</span> zu uns
-            </h2>
-            <p className="font-gothic text-[15px] leading-relaxed text-navy/65 max-w-xl mb-12 sm:text-[17px]">
-              Wir sind für dich da. Egal ob Bestellung, Marketing oder Produktfragen – dein persönliches AWAKE Team steht bereit.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
-              {supportContacts.map((contact) => {
-                const Icon = contact.icon;
-                return (
-                  <div key={contact.department} className="rounded-2xl p-5 bg-white border border-navy/10 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 bg-cta-yellow">
-                      <Icon size={20} className="text-navy" />
-                    </div>
-                    <h3 className="font-gothic text-base font-bold uppercase mb-1 text-navy">{contact.department}</h3>
-                    <p className="font-gothic text-xs mb-4 text-navy/55">{contact.description}</p>
-                    <a href={`mailto:${contact.contact}`} className="flex items-center gap-1.5 font-gothic text-xs font-bold text-awake-blue hover:text-navy transition-colors">
-                      <Mail size={12} /> {contact.contact}
-                    </a>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Geplante Funktionen */}
-            <div className="rounded-2xl p-8 bg-[#f5f4ef] border border-navy/10">
-              <h3 className="font-gothic text-xl font-bold uppercase mb-2 text-navy">Geplante Portal-Funktionen</h3>
-              <p className="font-gothic text-sm mb-6 text-navy/60">Das AWAKE Partner Portal wird kontinuierlich ausgebaut. Diese Funktionen sind in Entwicklung:</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {futureFunctions.map((fn) => (
-                  <div key={fn} className="flex items-center gap-2 py-2 px-3 rounded-xl font-gothic text-xs font-medium bg-white border border-navy/10 text-navy/65 h-full">
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-cta-yellow" />{fn}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Closing CTA */}
       <section className="relative py-16 lg:py-24 overflow-hidden bg-navy">
         <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(253,242,119,0.08) 0%, transparent 70%)" }} />
@@ -1131,7 +1189,7 @@ function VisionSupportSection() {
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-gothic text-base font-bold uppercase tracking-wide bg-cta-yellow text-navy hover:bg-[#f5e751] hover:shadow-[0_12px_30px_-12px_rgba(253,242,119,0.5)] transition-all">
                 Jetzt bestellen <ArrowRight size={18} />
               </a>
-              <a href="#support"
+              <a href="mailto:support@h2-awake.de"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-gothic text-base font-semibold border border-white/20 text-white hover:border-white/40 hover:bg-white/5 transition-all">
                 Support kontaktieren
               </a>
@@ -1166,6 +1224,7 @@ function PageContent() {
       <MarketingSection />
       <RetailerRevenueSection />
       <ComingSoonSection />
+      <RetailerRegistrationSection />
       <VisionSupportSection />
       <CartDrawer />
       <ContactWidget />
