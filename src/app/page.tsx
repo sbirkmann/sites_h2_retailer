@@ -776,6 +776,25 @@ function RetailerRevenueSection() {
               );
             })}
           </div>
+
+          {/* Full-width custom business card */}
+          <div className="mt-6 rounded-2xl p-6 bg-white border border-navy/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-navy/20 transition-colors">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#f5f4ef] flex-shrink-0 text-navy mt-0.5">
+                <Plus size={20} />
+              </div>
+              <div>
+                <h3 className="font-gothic text-base font-bold uppercase text-navy mb-1">Anderes Geschäftsmodell?</h3>
+                <p className="font-gothic text-sm text-navy/65 max-w-3xl leading-relaxed">
+                  Du führst ein anderes Unternehmen (z. B. Büro, Kanzlei, Co-Working Space) und möchtest deinen Mitarbeitern, Kunden oder Gästen AWAKE anbieten? Kein Problem – sprich einfach mit uns und wir finden die passende Lösung für dich.
+                </p>
+              </div>
+            </div>
+            <a href="#haendler-werden"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-gothic text-xs font-bold uppercase tracking-wide bg-cta-yellow text-navy hover:bg-[#f5e751] hover:shadow-[0_12px_30px_-12px_rgba(253,242,119,0.5)] transition-all flex-shrink-0 self-start md:self-center">
+              Jetzt anfragen <ArrowRight size={14} />
+            </a>
+          </div>
         </div>
       </section>
     </>
