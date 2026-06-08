@@ -13,7 +13,43 @@ export default function Navbar() {
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
   const pathname = usePathname();
-  const showCart = pathname !== "/";
+  const [isRetailerLoggedIn, setIsRetailerLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkLogin = () => {
+      if (typeof window === "undefined") return;
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+          const rawVal = parts.pop()?.split(";").shift();
+          return rawVal ? decodeURIComponent(rawVal) : undefined;
+        }
+        return undefined;
+      };
+      const email = getCookie("retailer_email");
+      const code = getCookie("retailer_code");
+      setIsRetailerLoggedIn(!!(email && code));
+    };
+
+    checkLogin();
+
+    window.addEventListener("retailer_auth_change", checkLogin);
+    window.addEventListener("focus", checkLogin);
+
+    let interval: ReturnType<typeof setInterval>;
+    if (pathname === "/portal") {
+      interval = setInterval(checkLogin, 500);
+    }
+
+    return () => {
+      window.removeEventListener("retailer_auth_change", checkLogin);
+      window.removeEventListener("focus", checkLogin);
+      if (interval) clearInterval(interval);
+    };
+  }, [pathname]);
+
+  const showCart = pathname !== "/" && (pathname !== "/portal" || isRetailerLoggedIn);
 
   useEffect(() => {
     const handleScroll = () => {

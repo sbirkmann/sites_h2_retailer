@@ -840,6 +840,12 @@ export default function RetailerPortalPage() {
   }, [loadInfo]);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("retailer_auth_change"));
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
     if ((activeTab === "addresses" || activeTab === "order") && isLoggedIn) {
       const timer = setTimeout(() => {
         loadAddresses();
@@ -1022,7 +1028,7 @@ export default function RetailerPortalPage() {
               <Lock className="h-6 w-6 text-[#173A57]" />
             </div>
 
-            <h2 className="text-2xl font-bold font-gothic text-center uppercase mb-2">B2B Login</h2>
+            <h2 className="text-2xl font-bold font-gothic text-center uppercase mb-2">Händler-Login</h2>
             <p className="text-sm text-navy/60 text-center mb-6">
               Gib deine registrierte Händler-E-Mail-Adresse ein, um einen 6-stelligen Zugangscode zu erhalten.
             </p>
@@ -1134,10 +1140,10 @@ export default function RetailerPortalPage() {
 
             <div className="mt-8 pt-6 border-t border-navy/5 text-center">
               <p className="text-xs text-navy/60 leading-relaxed font-gothic">
-                Du willst Händler werden? Wende dich an unseren{" "}
-                <Link href="mailto:support@h2-awake.de" className="text-[#173A57] font-semibold underline hover:text-[#2563EB] transition-colors">
-                  Kundendienst
-                </Link>.
+                Du willst Händler werden?{" "}
+                <Link href="/#haendler-werden" className="text-[#173A57] font-semibold underline hover:text-[#2563EB] transition-colors">
+                  Jetzt bewerben!
+                </Link>
               </p>
             </div>
           </div>
