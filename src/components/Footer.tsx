@@ -110,7 +110,7 @@ export default function Footer() {
                     href="/#dashboard"
                     className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
                   >
-                    Dashboard
+                    Was wir bieten
                   </Link>
                 </li>
                 <li>
@@ -140,18 +140,18 @@ export default function Footer() {
               <ul className="space-y-3">
                 <li>
                   <Link
-                    href="/#partnerprogramm"
+                    href="/#retailer-locator"
                     className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
                   >
-                    Partnerprogramm
+                    Retailer-Locator
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="mailto:support@h2-awake.de"
+                    href="/#haendler-werden"
                     className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer"
                   >
-                    Support
+                    Händler werden
                   </Link>
                 </li>
               </ul>
@@ -163,6 +163,16 @@ export default function Footer() {
                 Support & Rechtliches
               </div>
               <ul className="space-y-3">
+                <li>
+                  <a
+                    href="https://h2-awake.de/contact"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/65 hover:text-[#FDF277] transition-colors font-gothic text-[14px] cursor-pointer block"
+                  >
+                    Support & Kontakt (Formular)
+                  </a>
+                </li>
                 <li>
                   <a
                     href="mailto:support@h2-awake.de"

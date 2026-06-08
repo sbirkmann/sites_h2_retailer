@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
 import CartDrawer from "../components/CartDrawer";
 import ContactWidget from "../components/ContactWidget";
-import { fetchProducts, getPublicDownloads, type ApiProduct, type MarketingDownload } from "../lib/api";
+import { fetchProducts, type ApiProduct } from "../lib/api";
 import { SectionBadge } from "@/components/shared/section-badge";
 import { TextReveal, FadeUp, BlurIn, GlowButton, FloatingElement } from "@/components/home/animations";
 import { useScrollParallax } from "@/hooks/use-gsap-scroll";
@@ -221,15 +221,15 @@ function HeroSection() {
               <BlurIn delay={50}>
                 <SectionBadge variant="navy" className="mb-5 mx-auto md:mx-0" size="sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-cta-yellow animate-pulse mr-1" />
-                  Exklusiver Partnerbereich
+                  AWAKE HÄNDLER WERDEN
                 </SectionBadge>
               </BlurIn>
 
               <TextReveal delay={150}>
                 <h1 className="mt-5 font-gothic font-bold uppercase leading-[0.95] tracking-tight text-hero-text text-[40px] sm:text-[56px] lg:text-[68px]">
-                  Willkommen im{" "}
-                  <span className="text-awake-blue">AWAKE</span>{" "}
-                  Partnernetzwerk.
+                  Bringe die{" "}
+                  <span className="text-awake-blue">H₂-Revolution</span>{" "}
+                  in dein Sortiment.
                 </h1>
               </TextReveal>
 
@@ -249,7 +249,7 @@ function HeroSection() {
                   </GlowButton>
                   <a href="/portal"
                     className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-navy/25 bg-white/60 backdrop-blur-sm px-7 py-3.5 font-gothic text-[14px] font-bold uppercase tracking-wide text-navy hover:border-navy/50 hover:bg-white transition-all sm:px-9 sm:py-4 sm:text-[16px]">
-                    Partner Dashboard
+                    Zum Händler-Portal
                   </a>
                 </div>
               </FadeUp>
@@ -272,7 +272,7 @@ function HeroSection() {
               <FadeUp delay={550}>
                 <div className="mt-7 inline-flex items-center gap-2 text-[12px] font-bold text-hero-text/80 sm:text-[13px]">
                   <Stethoscope className="h-4 w-4 text-awake-blue" strokeWidth={2.2} />
-                  Empfohlen von Ärzten &amp; Therapeuten
+                  Empfohlen von Ärzten, Biohackern und Gesundheitsexperten
                 </div>
               </FadeUp>
 
@@ -299,7 +299,7 @@ function HeroSection() {
               {/* Stats */}
               <FadeUp delay={700}>
                 <div className="mt-8 grid grid-cols-3 gap-4 max-w-sm mx-auto md:mx-0">
-                  {[{ value: "11+", label: "ppm H₂" }, { value: "100%", label: "Trinkfertig" }, { value: "EU", label: "Europas Erstes" }].map((s) => (
+                  {[{ value: "11+", label: "ppm H₂" }, { value: "100%", label: "Trinkfertig" }, { value: "Nr. 1", label: "H2-Wasser in Europa" }].map((s) => (
                     <div key={s.label} className="text-center md:text-left">
                       <div className="font-gothic text-2xl font-bold text-navy">{s.value}</div>
                       <div className="font-gothic text-[11px] uppercase tracking-widest text-navy/50 font-medium">{s.label}</div>
@@ -365,8 +365,8 @@ const dashboardCards = [
   { icon: ShoppingCart, title: "Produkte bestellen", description: "Dosen, Flaschen und Quetschbeutel – einfach und schnell nachbestellen.", cta: "Zur Bestellung", href: "#produkte", highlight: true },
   { icon: Download, title: "Marketing Center", description: "Produktbilder, Social Media Vorlagen, Flyer, Poster und mehr.", cta: "Materialien laden", href: "#marketing", highlight: false },
   { icon: MapPin, title: "Retailer Locator", description: "Verwalte deinen Eintrag auf der AWAKE Händlerkarte.", cta: "Eintrag verwalten", href: "#retailer-locator", highlight: false },
-  { icon: Users, title: "Partnerprogramm", description: "Empfehle AWAKE weiter und sichere dir attraktive Provisionen.", cta: "Mehr erfahren", href: "#partnerprogramm", highlight: false },
-  { icon: HeadphonesIcon, title: "Support", description: "Direkter Kontakt zu deinem persönlichen AWAKE Ansprechpartner.", cta: "Kontakt aufnehmen", href: "mailto:support@h2-awake.de", highlight: false },
+  { icon: Users, title: "Partnerprogramm", description: "Empfehle AWAKE weiter und sichere dir attraktive Provisionen.", cta: "Mehr erfahren", href: "https://h2-awake.de/partner", highlight: false },
+  { icon: HeadphonesIcon, title: "Support", description: "Direkter Kontakt zu deinem persönlichen AWAKE Ansprechpartner.", cta: "Kontakt aufnehmen", href: "https://h2-awake.de/contact", highlight: false },
 ];
 
 function DashboardCard({ card, delay }: { card: (typeof dashboardCards)[0]; delay: number }) {
@@ -384,6 +384,8 @@ function DashboardCard({ card, delay }: { card: (typeof dashboardCards)[0]; dela
     <div ref={ref} onClick={() => { 
       if (card.href.startsWith("#")) { 
         document.querySelector(card.href)?.scrollIntoView({ behavior: "smooth" }); 
+      } else if (card.href.startsWith("http")) {
+        window.open(card.href, '_blank', 'noopener,noreferrer');
       } else {
         window.location.href = card.href;
       }
@@ -418,7 +420,7 @@ function DashboardSection() {
     <section id="dashboard" className="py-16 lg:py-24 bg-[#f5f4ef]">
       <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
         <div ref={headingRef} className="mb-12" style={{ opacity: 0, transform: "translateY(24px)", transition: "opacity 0.6s cubic-bezier(0.23,1,0.32,1), transform 0.6s cubic-bezier(0.23,1,0.32,1)" }}>
-          <SectionBadge className="mb-4">Partner Dashboard</SectionBadge>
+          <SectionBadge className="mb-4">Händler-Portal</SectionBadge>
           <h2 className="font-gothic text-[28px] font-bold uppercase leading-[1.05] text-navy sm:text-[36px] lg:text-[44px] mt-3">
             Dein exklusiver <span className="text-awake-blue">Zugang</span>
           </h2>
@@ -513,15 +515,6 @@ function ProductCard({ product, delay }: { product: ApiProduct; delay: number })
         ) : null}
 
         <div className="flex-1" />
-        <hr className="my-4 border-navy/10" />
-
-        {/* Action Button */}
-        <div className="space-y-3">
-          <a href="#haendler-werden"
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-gothic text-sm font-bold uppercase tracking-wide bg-cta-yellow text-navy hover:bg-[#f5e751] hover:shadow-[0_12px_30px_-12px_rgba(253,242,119,0.7)] transition-all duration-200 cursor-pointer">
-            Jetzt Händler werden
-          </a>
-        </div>
       </div>
     </div>
   );
@@ -570,9 +563,19 @@ function ProductsSection({ apiProducts, loading, error }: { apiProducts: ApiProd
         )}
 
         {!loading && !error && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {apiProducts.map((product, i) => <ProductCard key={product.id} product={product} delay={i * 100} />)}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {apiProducts.map((product, i) => <ProductCard key={product.id} product={product} delay={i * 100} />)}
+            </div>
+            <div className="mt-12 flex justify-center">
+              <GlowButton className="rounded-full">
+                <a href="#haendler-werden"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-cta-yellow px-8 py-4 text-center font-gothic text-[14px] font-bold uppercase tracking-wide text-hero-text hover:bg-[#f5e751] transition-all sm:text-[16px]">
+                  Jetzt Händler werden <ArrowRight className="h-4 w-4" />
+                </a>
+              </GlowButton>
+            </div>
+          </>
         )}
       </div>
     </section>
@@ -594,7 +597,7 @@ const marketingCategories = [
   { key: "lifestyle", icon: Award, title: "Lifestyle Bilder", description: "Premium Lifestyle-Fotografie für eine authentische Markenkommunikation.", items: ["Fitness & Sport", "Wellness & Spa", "Business & Longevity", "Outdoor"], available: false },
 ];
 
-function MarketingCard({ cat, delay, downloads }: { cat: (typeof marketingCategories)[0]; delay: number; downloads: MarketingDownload[] }) {
+function MarketingCard({ cat, delay }: { cat: (typeof marketingCategories)[0]; delay: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const Icon = cat.icon;
   useEffect(() => {
@@ -605,15 +608,6 @@ function MarketingCard({ cat, delay, downloads }: { cat: (typeof marketingCatego
     observer.observe(el); return () => observer.disconnect();
   }, [delay]);
 
-  const catDownloads = downloads.filter(d => d.category === cat.key && d.file_url);
-  const isAvailable = cat.available || catDownloads.length > 0;
-
-  const handleDownload = () => {
-    if (catDownloads.length > 0 && catDownloads[0].file_url) {
-      window.open(catDownloads[0].file_url, '_blank');
-    }
-  };
-
   return (
     <div ref={ref} className="rounded-2xl p-5 flex flex-col gap-4 bg-white border border-navy/10 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300"
       style={{ opacity: 0, transform: "translateY(24px)", transition: `opacity 0.6s cubic-bezier(0.23,1,0.32,1) ${delay}ms, transform 0.6s cubic-bezier(0.23,1,0.32,1) ${delay}ms, box-shadow 0.3s ease-out` }}>
@@ -621,36 +615,17 @@ function MarketingCard({ cat, delay, downloads }: { cat: (typeof marketingCatego
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#f5f4ef]">
           <Icon size={20} className="text-navy" />
         </div>
-        {!isAvailable && (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-gothic text-xs font-bold uppercase tracking-wide bg-[#f5f4ef] text-navy/40 border border-navy/10">
-            <Lock size={10} /> Bald
-          </span>
-        )}
       </div>
       <div>
         <h3 className="font-gothic text-base font-bold uppercase mb-2 text-navy">{cat.title}</h3>
-        <p className="font-gothic text-sm leading-relaxed mb-3 text-navy/60">{cat.description}</p>
-        <div className="flex flex-wrap gap-1.5">
-          {cat.items.map((item) => (
-            <span key={item} className="font-gothic text-xs px-2 py-0.5 rounded-md bg-[#f5f4ef] text-navy/55">{item}</span>
-          ))}
-        </div>
+        <p className="font-gothic text-sm leading-relaxed text-navy/60">{cat.description}</p>
       </div>
-      <button 
-        onClick={handleDownload}
-        disabled={!isAvailable || catDownloads.length === 0}
-        className={`flex items-center justify-center gap-2 py-2.5 rounded-full font-gothic text-sm font-bold uppercase tracking-wide transition-all duration-200 mt-auto cursor-pointer w-full ${isAvailable && catDownloads.length > 0 ? "bg-cta-yellow text-navy hover:bg-[#f5e751]" : "bg-[#f5f4ef] text-navy/30 border border-navy/10 cursor-not-allowed"}`}
-      >
-        {isAvailable && catDownloads.length > 0 ? <Download size={15} /> : <Lock size={15} />}
-        {isAvailable && catDownloads.length > 0 ? "Herunterladen" : "Bald verfügbar"}
-      </button>
     </div>
   );
 }
 
 function MarketingSection() {
   const headingRef = useRef<HTMLDivElement>(null);
-  const [downloads, setDownloads] = useState<MarketingDownload[]>([]);
 
   useEffect(() => {
     const el = headingRef.current; if (!el) return;
@@ -658,16 +633,6 @@ function MarketingSection() {
       if (entry.isIntersecting) { el.style.opacity = "1"; el.style.transform = "translateY(0)"; observer.disconnect(); }
     }, { threshold: 0.1 });
     observer.observe(el); return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    getPublicDownloads()
-      .then((data) => {
-        setDownloads(data);
-      })
-      .catch((err) => {
-        console.error("Fehler beim Laden der öffentlichen Downloads:", err);
-      });
   }, []);
 
   return (
@@ -679,12 +644,20 @@ function MarketingSection() {
           <h2 className="font-gothic text-[28px] font-bold uppercase leading-[1.05] text-navy sm:text-[36px] lg:text-[44px] mt-3">
             Alles, was du für deinen <span className="text-awake-blue">Erfolg</span> brauchst
           </h2>
-          <p className="font-gothic text-[15px] leading-relaxed text-navy/65 mt-3 max-w-xl sm:text-[17px]">
-            Professionelle Marketingmaterialien, die deine Kunden überzeugen – fertig gestaltet, sofort einsatzbereit.
+          <p className="font-gothic text-[15px] leading-relaxed text-navy/65 mt-3 max-w-2xl sm:text-[17px]">
+            Professionelle Marketingmaterialien, die deine Kunden überzeugen – fertig gestaltet, sofort einsatzbereit. Ganz einfach als Download und Bestell-Link im Händler-Portal.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {marketingCategories.map((cat, i) => <MarketingCard key={cat.key} cat={cat} delay={i * 60} downloads={downloads} />)}
+          {marketingCategories.map((cat, i) => <MarketingCard key={cat.key} cat={cat} delay={i * 60} />)}
+        </div>
+        <div className="mt-12 flex justify-center">
+          <GlowButton className="rounded-full">
+            <a href="#haendler-werden"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-cta-yellow px-8 py-4 text-center font-gothic text-[14px] font-bold uppercase tracking-wide text-hero-text hover:bg-[#f5e751] transition-all sm:text-[16px]">
+              Jetzt Händler werden <ArrowRight className="h-4 w-4" />
+            </a>
+          </GlowButton>
         </div>
       </div>
     </section>
@@ -813,24 +786,16 @@ function RetailerRevenueSection() {
 // COMING SOON + PARTNER PROGRAM + SUCCESS STORIES
 // ──────────────────────────────────────────────────────────────────────────────
 
-const successStories = [
-  { type: "Fitnessstudio", name: "Premium Gym München", quote: "Unsere Mitglieder fragen aktiv nach AWAKE. Es ist zum festen Bestandteil unseres Angebots geworden.", metric: "★★★★★", metricLabel: "Partnerbewertung", avatar: "F" },
-  { type: "Longevity Center", name: "Longevity Lab Berlin", quote: "AWAKE ergänzt unsere Protokolle perfekt. Klienten schätzen die Qualität und die Wissenschaft dahinter.", metric: "★★★★★", metricLabel: "Partnerbewertung", avatar: "L" },
-  { type: "Biohacking Lab", name: "BioHack Studio Hamburg", quote: "Als Biohacking-Enthusiasten war AWAKE die logische Wahl. Trinkfertig, stabil, wissenschaftlich fundiert.", metric: "★★★★★", metricLabel: "Partnerbewertung", avatar: "B" },
-  { type: "Gesundheitszentrum", name: "Vitality Center Wien", quote: "Die Zusammenarbeit mit AWAKE is unkompliziert und professionell. Genau das, was wir uns wünschen.", metric: "★★★★★", metricLabel: "Partnerbewertung", avatar: "G" },
-];
 
 function ComingSoonSection() {
-  const heading2Ref = useRef<HTMLDivElement>(null);
   const partnerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    [heading2Ref, partnerRef].forEach((ref) => {
-      const el = ref.current; if (!el) return;
-      const observer = new IntersectionObserver(([entry]) => {
-        if (entry.isIntersecting) { el.style.opacity = "1"; el.style.transform = "translateY(0)"; observer.disconnect(); }
-      }, { threshold: 0.1 });
-      observer.observe(el);
-    });
+    const el = partnerRef.current; if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { el.style.opacity = "1"; el.style.transform = "translateY(0)"; observer.disconnect(); }
+    }, { threshold: 0.1 });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -840,46 +805,99 @@ function ComingSoonSection() {
         <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
           <div ref={partnerRef} className="rounded-3xl overflow-hidden bg-white/5 border border-white/15 backdrop-blur-sm"
             style={{ opacity: 0, transform: "translateY(24px)", transition: "opacity 0.6s cubic-bezier(0.23,1,0.32,1), transform 0.6s cubic-bezier(0.23,1,0.32,1)" }}>
-            <div className="grid lg:grid-cols-2 gap-0">
-              <div className="p-8 lg:p-12">
-                <SectionBadge variant="outline" className="mb-6"><Users size={12} className="mr-1" /> Partnerprogramm</SectionBadge>
-                <h2 className="font-gothic text-[26px] font-bold uppercase leading-[1.05] text-white sm:text-[32px] mt-3 mb-4">
-                  Empfehlen und <span className="text-cta-yellow">verdienen</span>
-                </h2>
-                <p className="font-gothic text-[15px] leading-relaxed text-white/70 mb-8">
-                  Als AWAKE Partner kannst du das Netzwerk aktiv mitgestalten. Empfehle neue Geschäftskunden oder Privatkunden und profitiere von attraktiven Provisionen.
-                </p>
-                {[{ title: "Geschäftskunden empfehlen (B2B)", icon: Users, text: "Empfehle einen Retailer, der bei AWAKE bestellt, und erhalte einmalig", value: "10 %", unit: "des Bestellwertes" }, { title: "Privatkunden empfehlen (B2C)", icon: Gift, text: "Teile deinen Empfehlungslink und verdiene auf jeden Kauf", value: "20 %", unit: "Provision" }].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.title} className="rounded-xl p-5 mb-4 bg-white/5 border border-white/10">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-cta-yellow/15">
-                          <Icon size={16} className="text-cta-yellow" />
+            <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 p-8 lg:p-12 items-center">
+              {/* Left Column: Intro & Key Benefits */}
+              <div className="lg:col-span-5 flex flex-col justify-between h-full">
+                <div>
+                  <SectionBadge variant="outline" className="mb-6"><Users size={12} className="mr-1" /> Partnerprogramm</SectionBadge>
+                  <h2 className="font-gothic text-[32px] font-bold uppercase leading-[1.05] text-white sm:text-[40px] mt-3 mb-6">
+                    Empfehlen und <span className="text-cta-yellow">mitverdienen</span>
+                  </h2>
+                  <p className="font-gothic text-[16px] leading-relaxed text-white/70 mb-8">
+                    Nutze dein Netzwerk und profitiere dauerhaft. Empfehle AWAKE an andere Geschäftspartner oder Privatkunden. Du verdienst bei uns nicht nur einmalig, sondern wiederkehrend an jeder einzelnen Bestellung!
+                  </p>
+                  
+                  {/* Key Highlights */}
+                  <div className="space-y-4 mb-8">
+                    {[
+                      { text: "Dauerhafte, wiederkehrende Provisionen" },
+                      { text: "Echtzeit-Tracking und Auszahlungen im Dashboard" },
+                      { text: "Multi-Tier Netzwerkaufbau über 5 Stufen" },
+                    ].map((h, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center bg-cta-yellow/20 border border-cta-yellow/30">
+                          <Check size={12} className="text-cta-yellow" />
                         </div>
-                        <div className="font-gothic text-sm font-bold text-white">{item.title}</div>
+                        <span className="font-gothic text-sm text-white/80">{h.text}</span>
                       </div>
-                      <p className="font-gothic text-sm mb-3 text-white/60">{item.text}</p>
-                      <div className="inline-flex items-baseline gap-1 px-3 py-1.5 rounded-lg bg-cta-yellow/15 border border-cta-yellow/25">
-                        <span className="font-gothic text-2xl font-bold text-cta-yellow">{item.value}</span>
-                        <span className="font-gothic text-xs text-white/60">{item.unit}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                <a href="mailto:support@h2-awake.de"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-gothic text-sm font-bold uppercase tracking-wide bg-cta-yellow text-navy hover:bg-[#f5e751] transition-all">
-                  Jetzt teilnehmen
-                </a>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="pt-2">
+                  <a href="https://h2-awake.de/partner" target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-gothic text-[15px] font-bold uppercase tracking-wide bg-cta-yellow text-navy hover:bg-[#f5e751] transition-all hover:shadow-[0_8px_25px_-8px_rgba(253,242,119,0.5)]">
+                    Jetzt Partner werden <ArrowRight className="h-4 w-4" />
+                  </a>
+                </div>
               </div>
-              <div className="p-8 lg:p-12 flex flex-col justify-center bg-white/5">
-                <div className="space-y-3">
-                  {[{ label: "B2B – Einmalige Provision", value: "10 % des Bestellwertes" }, { label: "B2C – Provision je Kauf", value: "20 %" }, { label: "B2C – Weitere Stufen", value: "5 Stufen" }, { label: "Auszahlung", value: "Monatlich, transparent" }, { label: "Tracking", value: "Dashboard (bald)" }].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between py-2.5 px-4 rounded-xl bg-white/5 border border-white/8">
-                      <span className="font-gothic text-sm text-white/60">{item.label}</span>
-                      <span className="font-gothic text-sm font-semibold text-cta-yellow">{item.value}</span>
+
+              {/* Right Column: Premium Visual Cards (B2B and B2C) */}
+              <div className="lg:col-span-7 grid sm:grid-cols-2 gap-6 items-stretch">
+                {/* B2B Card */}
+                <div className="rounded-2xl p-6 bg-white/5 border border-white/10 flex flex-col justify-between hover:border-cta-yellow/30 hover:bg-white/[0.07] transition-all duration-300">
+                  <div>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cta-yellow/10 border border-cta-yellow/20 mb-6">
+                      <Users size={22} className="text-cta-yellow" />
                     </div>
-                  ))}
+                    <h3 className="font-gothic text-lg font-bold text-white uppercase mb-2">Geschäftskunden (B2B)</h3>
+                    <p className="font-gothic text-sm text-white/60 mb-6 leading-relaxed">
+                      Empfehle AWAKE an Händler, Fitnessstudios, Praxen oder Hotels und baue dir einen B2B-Kundenstamm auf.
+                    </p>
+                  </div>
+                  <div>
+                    <div className="mb-4">
+                      <div className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mb-1">Provision</div>
+                      <div className="font-gothic text-3xl font-bold text-cta-yellow">Bis zu 10 %</div>
+                      <div className="text-xs text-white/50 mt-1">Lebenslang auf jede Bestellung</div>
+                    </div>
+                    <div className="pt-4 border-t border-white/10 space-y-2">
+                      <div className="text-xs text-white/75 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cta-yellow" /> Wiederkehrende Beteiligung
+                      </div>
+                      <div className="text-xs text-white/75 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cta-yellow" /> Attraktive B2B-Volumen
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* B2C Card */}
+                <div className="rounded-2xl p-6 bg-white/5 border border-white/10 flex flex-col justify-between hover:border-cta-yellow/30 hover:bg-white/[0.07] transition-all duration-300">
+                  <div>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cta-yellow/10 border border-cta-yellow/20 mb-6">
+                      <Gift size={22} className="text-cta-yellow" />
+                    </div>
+                    <h3 className="font-gothic text-lg font-bold text-white uppercase mb-2">Endkunden & Team (B2C)</h3>
+                    <p className="font-gothic text-sm text-white/60 mb-6 leading-relaxed">
+                      Teile deinen persönlichen Empfehlungslink mit deiner Community oder baue dein eigenes Empfehlungs-Team auf.
+                    </p>
+                  </div>
+                  <div>
+                    <div className="mb-4">
+                      <div className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mb-1">Provision</div>
+                      <div className="font-gothic text-3xl font-bold text-cta-yellow">Bis zu 20 %</div>
+                      <div className="text-xs text-cta-yellow font-semibold mt-1">+ 5 Netzwerk-Ebenen</div>
+                    </div>
+                    <div className="pt-4 border-t border-white/10 space-y-2">
+                      <div className="text-xs text-white/75 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cta-yellow" /> 20% auf Direktbestellungen
+                      </div>
+                      <div className="text-xs text-white/75 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cta-yellow" /> 5-stufiges Netzwerk-Modell
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -887,39 +905,6 @@ function ComingSoonSection() {
         </div>
       </section>
 
-      {/* Erfolgsstories */}
-      <section id="stories" className="py-16 lg:py-24 bg-[#f5f4ef]">
-        <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
-          <hr className="border-navy/10 mb-16" />
-          <div ref={heading2Ref} className="mb-12" style={{ opacity: 0, transform: "translateY(24px)", transition: "opacity 0.6s cubic-bezier(0.23,1,0.32,1), transform 0.6s cubic-bezier(0.23,1,0.32,1)" }}>
-            <SectionBadge className="mb-4">Erfolgsstories</SectionBadge>
-            <h2 className="font-gothic text-[28px] font-bold uppercase leading-[1.05] text-navy sm:text-[36px] lg:text-[44px] mt-3">
-              Was unsere <span className="text-awake-blue">Partner</span> sagen
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {successStories.map((story) => (
-              <div key={story.name} className="rounded-2xl p-6 bg-white border border-navy/10 shadow-sm">
-                <Quote size={24} className="text-cta-yellow mb-4" />
-                <p className="font-gothic text-base leading-relaxed mb-6 italic text-navy/75">„{story.quote}"</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-gothic text-sm font-bold bg-cta-yellow text-navy">{story.avatar}</div>
-                    <div>
-                      <div className="font-gothic text-sm font-bold text-navy">{story.name}</div>
-                      <div className="font-gothic text-xs text-navy/50">{story.type}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-gothic text-sm font-bold text-cta-yellow">{story.metric}</div>
-                    <div className="font-gothic text-xs text-navy/45">{story.metricLabel}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </>
   );
 }
@@ -934,6 +919,9 @@ function RetailerRegistrationSection() {
     contactName: "",
     email: "",
     phone: "",
+    website: "",
+    industry: "",
+    customIndustry: "",
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -951,12 +939,15 @@ function RetailerRegistrationSection() {
         contactName: "",
         email: "",
         phone: "",
+        website: "",
+        industry: "",
+        customIndustry: "",
         message: "",
       });
     }, 1200);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -1091,6 +1082,80 @@ function RetailerRegistrationSection() {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="website" className="block text-xs font-semibold uppercase tracking-wider text-navy/70 mb-1">
+                          Website *
+                        </label>
+                        <input
+                          id="website"
+                          name="website"
+                          type="url"
+                          required
+                          value={formData.website}
+                          onChange={handleChange}
+                          placeholder="www.deine-website.de"
+                          className="w-full px-4 py-3 bg-[#f5f4ef]/30 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 text-sm font-gothic text-navy placeholder:text-navy/35"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="industry" className="block text-xs font-semibold uppercase tracking-wider text-navy/70 mb-1">
+                          Branche *
+                        </label>
+                        <select
+                          id="industry"
+                          name="industry"
+                          required
+                          value={formData.industry}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 text-sm font-gothic text-navy appearance-none cursor-pointer"
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23173A57' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                            backgroundPosition: 'right 12px center',
+                            backgroundSize: '18px',
+                            backgroundRepeat: 'no-repeat',
+                            paddingRight: '36px'
+                          }}
+                        >
+                          <option value="" disabled>Bitte wählen...</option>
+                          <option value="Fitnessstudio / Sportbereich">Fitnessstudio / Sportbereich</option>
+                          <option value="Longevity- / Biohacking-Center">Longevity- / Biohacking-Center</option>
+                          <option value="Praxis / Arzt / Therapeut">Praxis / Arzt / Therapeut</option>
+                          <option value="Hotel / Gastronomie / Spa">Hotel / Gastronomie / Spa</option>
+                          <option value="Einzelhandel / Shop">Einzelhandel / Shop</option>
+                          <option value="Sonstiges">Sonstiges</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {formData.industry === "Sonstiges" && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div>
+                            <label htmlFor="customIndustry" className="block text-xs font-semibold uppercase tracking-wider text-navy/70 mb-1">
+                              Spezifische Branche *
+                            </label>
+                            <input
+                              id="customIndustry"
+                              name="customIndustry"
+                              type="text"
+                              required={formData.industry === "Sonstiges"}
+                              value={formData.customIndustry}
+                              onChange={handleChange}
+                              placeholder="Deine Branche eintragen..."
+                              className="w-full px-4 py-3 bg-[#f5f4ef]/30 border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy/20 text-sm font-gothic text-navy placeholder:text-navy/35"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     <div>
                       <label htmlFor="message" className="block text-xs font-semibold uppercase tracking-wider text-navy/70 mb-1">
                         Nachricht / Anmerkungen (optional)
@@ -1176,7 +1241,7 @@ function VisionSupportSection() {
         <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(253,242,119,0.08) 0%, transparent 70%)" }} />
         <div className="mx-auto max-w-[1350px] px-4 lg:px-8 relative z-10 text-center">
           <div ref={closingRef} style={{ opacity: 0, transform: "translateY(24px)", transition: "opacity 0.6s cubic-bezier(0.23,1,0.32,1), transform 0.6s cubic-bezier(0.23,1,0.32,1)" }}>
-            <SectionBadge variant="outline" className="mb-8 mx-auto">AWAKE Partner</SectionBadge>
+            <SectionBadge variant="outline" className="mb-8 mx-auto">AWAKE Händler</SectionBadge>
             <h2 className="font-gothic text-[28px] font-bold uppercase leading-[1.05] text-white sm:text-[40px] lg:text-[52px] mb-6 max-w-3xl mx-auto">
               Du bist nicht einfach Händler.{" "}
               <span className="text-cta-yellow">Du bist Teil der Bewegung.</span>
@@ -1184,14 +1249,10 @@ function VisionSupportSection() {
             <p className="font-gothic text-[15px] leading-relaxed text-white/65 max-w-xl mx-auto mb-10 sm:text-[17px]">
               Gemeinsam bringen wir Wasserstoffwasser nach Europa. Danke, dass du früh dabei bist.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="#produkte"
+            <div className="flex justify-center">
+              <a href="#haendler-werden"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-gothic text-base font-bold uppercase tracking-wide bg-cta-yellow text-navy hover:bg-[#f5e751] hover:shadow-[0_12px_30px_-12px_rgba(253,242,119,0.5)] transition-all">
-                Jetzt bestellen <ArrowRight size={18} />
-              </a>
-              <a href="mailto:support@h2-awake.de"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-gothic text-base font-semibold border border-white/20 text-white hover:border-white/40 hover:bg-white/5 transition-all">
-                Support kontaktieren
+                Jetzt Händler werden <ArrowRight size={18} />
               </a>
             </div>
           </div>
