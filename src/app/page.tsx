@@ -802,133 +802,6 @@ function RetailerRevenueSection() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// COMING SOON + PARTNER PROGRAM + SUCCESS STORIES
-// ──────────────────────────────────────────────────────────────────────────────
-
-
-function ComingSoonSection() {
-  const partnerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = partnerRef.current; if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { el.style.opacity = "1"; el.style.transform = "translateY(0)"; observer.disconnect(); }
-    }, { threshold: 0.1 });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <>
-      {/* Partnerprogramm */}
-      <section id="partnerprogramm" className="py-16 lg:py-24 bg-navy">
-        <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
-          <div ref={partnerRef} className="rounded-3xl overflow-hidden bg-white/5 border border-white/15 backdrop-blur-sm"
-            style={{ opacity: 0, transform: "translateY(24px)", transition: "opacity 0.6s cubic-bezier(0.23,1,0.32,1), transform 0.6s cubic-bezier(0.23,1,0.32,1)" }}>
-            <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 p-8 lg:p-12 items-center">
-              {/* Left Column: Intro & Key Benefits */}
-              <div className="lg:col-span-5 flex flex-col justify-between h-full">
-                <div>
-                  <SectionBadge variant="outline" className="mb-6"><Users size={12} className="mr-1" /> Partnerprogramm</SectionBadge>
-                  <h2 className="font-gothic text-[32px] font-bold uppercase leading-[1.05] text-white sm:text-[40px] mt-3 mb-6">
-                    Empfehlen und <span className="text-cta-yellow">mitverdienen</span>
-                  </h2>
-                  <p className="font-gothic text-[16px] leading-relaxed text-white/70 mb-8">
-                    Nutze dein Netzwerk und profitiere dauerhaft. Empfehle AWAKE an andere Geschäftspartner oder Privatkunden. Du verdienst bei uns nicht nur einmalig, sondern wiederkehrend an jeder einzelnen Bestellung!
-                  </p>
-                  
-                  {/* Key Highlights */}
-                  <div className="space-y-4 mb-8">
-                    {[
-                      { text: "Dauerhafte, wiederkehrende Provisionen" },
-                      { text: "Echtzeit-Tracking und Auszahlungen im Dashboard" },
-                      { text: "Multi-Tier Netzwerkaufbau über 5 Stufen" },
-                    ].map((h, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center bg-cta-yellow/20 border border-cta-yellow/30">
-                          <Check size={12} className="text-cta-yellow" />
-                        </div>
-                        <span className="font-gothic text-sm text-white/80">{h.text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="pt-2">
-                  <a href="https://h2-awake.de/partner" target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-gothic text-[15px] font-bold uppercase tracking-wide bg-cta-yellow text-navy hover:bg-[#f5e751] transition-all hover:shadow-[0_8px_25px_-8px_rgba(253,242,119,0.5)]">
-                    Jetzt Partner werden <ArrowRight className="h-4 w-4" />
-                  </a>
-                </div>
-              </div>
-
-              {/* Right Column: Premium Visual Cards (B2B and B2C) */}
-              <div className="lg:col-span-7 grid sm:grid-cols-2 gap-6 items-stretch">
-                {/* B2B Card */}
-                <div className="rounded-2xl p-6 bg-white/5 border border-white/10 flex flex-col justify-between hover:border-cta-yellow/30 hover:bg-white/[0.07] transition-all duration-300">
-                  <div>
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cta-yellow/10 border border-cta-yellow/20 mb-6">
-                      <Users size={22} className="text-cta-yellow" />
-                    </div>
-                    <h3 className="font-gothic text-lg font-bold text-white uppercase mb-2">Geschäftskunden (B2B)</h3>
-                    <p className="font-gothic text-sm text-white/60 mb-6 leading-relaxed">
-                      Empfehle AWAKE an Händler, Fitnessstudios, Praxen oder Hotels und baue dir einen B2B-Kundenstamm auf.
-                    </p>
-                  </div>
-                  <div>
-                    <div className="mb-4">
-                      <div className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mb-1">Provision</div>
-                      <div className="font-gothic text-3xl font-bold text-cta-yellow">Bis zu 10 %</div>
-                      <div className="text-xs text-white/50 mt-1">Lebenslang auf jede Bestellung</div>
-                    </div>
-                    <div className="pt-4 border-t border-white/10 space-y-2">
-                      <div className="text-xs text-white/75 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cta-yellow" /> Wiederkehrende Beteiligung
-                      </div>
-                      <div className="text-xs text-white/75 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cta-yellow" /> Attraktive B2B-Volumen
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* B2C Card */}
-                <div className="rounded-2xl p-6 bg-white/5 border border-white/10 flex flex-col justify-between hover:border-cta-yellow/30 hover:bg-white/[0.07] transition-all duration-300">
-                  <div>
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-cta-yellow/10 border border-cta-yellow/20 mb-6">
-                      <Gift size={22} className="text-cta-yellow" />
-                    </div>
-                    <h3 className="font-gothic text-lg font-bold text-white uppercase mb-2">Endkunden & Team (B2C)</h3>
-                    <p className="font-gothic text-sm text-white/60 mb-6 leading-relaxed">
-                      Teile deinen persönlichen Empfehlungslink mit deiner Community oder baue dein eigenes Empfehlungs-Team auf.
-                    </p>
-                  </div>
-                  <div>
-                    <div className="mb-4">
-                      <div className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mb-1">Provision</div>
-                      <div className="font-gothic text-3xl font-bold text-cta-yellow">Bis zu 20 %</div>
-                      <div className="text-xs text-cta-yellow font-semibold mt-1">+ 5 Netzwerk-Ebenen</div>
-                    </div>
-                    <div className="pt-4 border-t border-white/10 space-y-2">
-                      <div className="text-xs text-white/75 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cta-yellow" /> 20% auf Direktbestellungen
-                      </div>
-                      <div className="text-xs text-white/75 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cta-yellow" /> 5-stufiges Netzwerk-Modell
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </>
-  );
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 // RETAILER REGISTRATION FORM
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -972,7 +845,7 @@ function RetailerRegistrationSection() {
   };
 
   return (
-    <section id="haendler-werden" className="py-16 lg:py-24 bg-[#f5f4ef] border-t border-navy/10">
+    <section id="haendler-werden" className="py-16 lg:py-24 bg-white border-t border-navy/10">
       <div className="mx-auto max-w-[1350px] px-4 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
@@ -1303,7 +1176,6 @@ function PageContent() {
       <ProductsSection apiProducts={apiProducts} loading={loading} error={error} />
       <MarketingSection />
       <RetailerRevenueSection />
-      <ComingSoonSection />
       <RetailerRegistrationSection />
       <VisionSupportSection />
       <CartDrawer />
