@@ -11,6 +11,7 @@ import Footer from "@/components/Footer";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import { CookieBanner } from "@/components/layout/cookie-banner";
 import { ConditionalCapiTracker } from "@/components/layout/conditional-capi-tracker";
+import { organizationSchema, localBusinessSchema, websiteSchema } from "@/lib/json-ld-schemas";
 
 const introRust = localFont({
   src: "../fonts/IntroRust.otf",
@@ -88,10 +89,22 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://h2-awake.de" />
         <link rel="preconnect" href="https://h2-awake.de" crossOrigin="anonymous" />
-        <link rel="preload" as="image" href="/images/hero-slide-1.avif" type="image/avif" fetchPriority="high" />
+        <link rel="preload" as="image" href="/images/hero-slide-1.webp" type="image/webp" fetchPriority="high" />
         <link
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
           rel="stylesheet"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema()) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema()) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema("/")) }}
         />
         <Script
           id="scroll-restoration"

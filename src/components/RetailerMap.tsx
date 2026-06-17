@@ -8,6 +8,8 @@ interface Retailer {
   info_name: string;
   info_tel: string | null;
   info_website: string | null;
+  info_retaileraddress?: string | null;
+  show_address?: boolean;
   map_lat: number;
   map_lng: number;
 }
@@ -29,7 +31,8 @@ export default function RetailerMap() {
         const L = (await import("leaflet")).default as typeof Leaflet;
 
         // Fetch retailers from the API
-        const res = await fetch("https://h2vitaldash.x900.3az.de/api/get_retailer");
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE || "https://h2vitaldash.x900.3az.de/api";
+        const res = await fetch(`${apiBase}/get_retailer`);
         if (!res.ok) throw new Error("Fehler beim Laden der Händlerdaten");
         const json = await res.json();
 
@@ -91,6 +94,19 @@ export default function RetailerMap() {
             <div class="custom-popup-content">
               <h4 class="popup-title">${r.info_name}</h4>
           `;
+
+          if (r.show_address && r.info_retaileraddress) {
+            popupContent += `
+              <div class="popup-item align-start">
+                <span class="icon">📍</span>
+                <span class="address-text">${r.info_retaileraddress}</span>
+              </div>
+              <div class="popup-item">
+                <span class="icon">🚗</span>
+                <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(r.info_retaileraddress)}" target="_blank" rel="noopener noreferrer" class="popup-link highlight">Route planen</a>
+              </div>
+            `;
+          }
 
           if (r.info_tel) {
             popupContent += `
@@ -167,6 +183,13 @@ export default function RetailerMap() {
           margin-bottom: 6px;
           font-size: 12px;
           font-family: var(--font-century-gothic), sans-serif;
+        }
+        .popup-item.align-start {
+          align-items: flex-start;
+        }
+        .address-text {
+          word-break: break-word;
+          line-height: 1.4;
         }
         .popup-item:last-child {
           margin-bottom: 0;

@@ -5,6 +5,8 @@ import { useCart } from "../lib/CartContext";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
+import awakeLogo from "../../public/awake-logo.webp";
 
 export default function Navbar() {
   const { totalItems, toggleCart } = useCart();
@@ -132,11 +134,12 @@ export default function Navbar() {
               {/* Center Logo */}
               <div className="flex-shrink-0 flex justify-center items-center px-4 lg:px-10">
                 <Link href="/" className="inline-block cursor-pointer">
-                  <img
+                  <Image
+                    src={awakeLogo}
                     alt="AWAKE Logo - Wasserstoff-Wasser"
-                    src="/awake-logo.png"
                     title="AWAKE Logo - Wasserstoff-Wasser"
-                    className={`object-contain transition-all duration-300 ${
+                    priority
+                    className={`object-contain w-auto transition-all duration-300 ${
                       isScrolled ? "h-[28px] sm:h-[32px]" : "h-[34px] sm:h-[40px]"
                     }`}
                   />

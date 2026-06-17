@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   Lock, 
   Unlock, 
@@ -90,13 +91,17 @@ function LocalRetailerMap({
   lng, 
   name, 
   website, 
-  phone 
+  phone,
+  showAddress,
+  address
 }: { 
   lat: number; 
   lng: number; 
   name: string; 
   website?: string; 
   phone?: string; 
+  showAddress?: boolean;
+  address?: string;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,6 +159,18 @@ function LocalRetailerMap({
           <div style="font-family: var(--font-century-gothic), sans-serif; padding: 4px; color: #173A57; min-width: 160px;">
             <strong style="font-size:12px; display:block; margin-bottom:6px; text-transform: uppercase; border-bottom: 1px solid rgba(23,58,87,0.1); padding-bottom: 4px;">${name || "Händler-Standort"}</strong>
         `;
+        if (showAddress && address) {
+          popupHtml += `
+            <div style="font-size:11px; margin-bottom:6px; display:flex; align-items:flex-start; gap:6px;">
+              <span style="font-size:12px;">📍</span>
+              <span style="word-break: break-word;">${address}</span>
+            </div>
+            <div style="font-size:11px; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+              <span style="font-size:12px;">🚗</span>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer" style="color:#173A57; text-decoration:underline; font-weight:600;">Route planen</a>
+            </div>
+          `;
+        }
         if (phone) {
           popupHtml += `
             <div style="font-size:11px; margin-bottom:4px; display:flex; align-items:center; gap:4px;">
@@ -192,7 +209,7 @@ function LocalRetailerMap({
         mapInstanceRef.current = null;
       }
     };
-  }, [lat, lng, name, website, phone]);
+  }, [lat, lng, name, website, phone, showAddress, address]);
 
   return (
     <div className="relative w-full h-[280px] rounded-xl overflow-hidden border border-navy/10 shadow-inner bg-[#f5f4ef]">
@@ -238,7 +255,7 @@ function PortalProductCard({
       {/* Product Image */}
       <div className="relative h-48 flex items-center justify-center overflow-hidden flex-shrink-0 bg-[#f5f4ef]">
         {product.image ? (
-          <img src={product.image} alt={product.name} className="h-full w-full object-cover" style={{ objectPosition: "center top" }} />
+          <Image unoptimized src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" style={{ objectPosition: "center top" }} />
         ) : (
           <div className="flex flex-col items-center gap-3">
             <Package size={44} className="text-[#173A57]/20" />
@@ -493,6 +510,7 @@ export default function RetailerPortalPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showAddress, setShowAddress] = useState(false);
   const [mapLat, setMapLat] = useState<string>("");
   const [mapLng, setMapLng] = useState<string>("");
   const [saveLoading, setSaveLoading] = useState(false);
@@ -515,6 +533,7 @@ export default function RetailerPortalPage() {
     setAddressSearchQuery("");
     setAddressSuggestions([]);
     setShowSuggestions(false);
+    setShowAddress(false);
     setCatalog([]);
   }
 
@@ -621,6 +640,7 @@ export default function RetailerPortalPage() {
         setInfoRetailerAddress(infoRes.data.info_retaileraddress || "");
         setAddressSearchQuery(infoRes.data.info_retaileraddress || "");
         setShowMap(infoRes.data.show_map || false);
+        setShowAddress(infoRes.data.show_address || false);
         setMapLat(infoRes.data.map_lat !== null ? infoRes.data.map_lat.toString() : "");
         setMapLng(infoRes.data.map_lng !== null ? infoRes.data.map_lng.toString() : "");
         setVatIdInput(infoRes.data.vat_id || "");
@@ -972,6 +992,7 @@ export default function RetailerPortalPage() {
         info_tel: infoTel.trim() || undefined,
         info_retaileraddress: infoRetailerAddress.trim() || undefined,
         show_map: showMap,
+        show_address: showAddress,
         map_lat: lat,
         map_lng: lng,
       });
@@ -1569,13 +1590,35 @@ export default function RetailerPortalPage() {
                         id="show_map"
                         type="checkbox"
                         checked={showMap}
-                        onChange={(e) => setShowMap(e.target.checked)}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setShowMap(val);
+                          if (!val) {
+                            setShowAddress(false);
+                          }
+                        }}
                         className="h-4 w-4 rounded border-navy/10 text-[#173A57] focus:ring-[#173A57]/30 cursor-pointer"
                       />
                       <label htmlFor="show_map" className="text-xs font-bold uppercase tracking-wide text-navy cursor-pointer select-none">
                         Auf Händlerkarte anzeigen
                       </label>
                     </div>
+
+                    {/* show_address Checkbox */}
+                    {showMap && (
+                      <div className="pt-2 flex items-center gap-2">
+                        <input
+                          id="show_address"
+                          type="checkbox"
+                          checked={showAddress}
+                          onChange={(e) => setShowAddress(e.target.checked)}
+                          className="h-4 w-4 rounded border-navy/10 text-[#173A57] focus:ring-[#173A57]/30 cursor-pointer"
+                        />
+                        <label htmlFor="show_address" className="text-xs font-bold uppercase tracking-wide text-navy cursor-pointer select-none">
+                          Meine Adresse soll veröffentlicht werden
+                        </label>
+                      </div>
+                    )}
 
                     {/* Address Search */}
                     {showMap && (
@@ -1680,6 +1723,8 @@ export default function RetailerPortalPage() {
                       name={infoName || `${retailerInfo?.first_name} ${retailerInfo?.last_name}`}
                       website={infoWebsite}
                       phone={infoTel}
+                      showAddress={showAddress}
+                      address={infoRetailerAddress}
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center flex-grow py-16 bg-[#f5f4ef] border border-navy/10 rounded-xl text-center p-6 gap-3">

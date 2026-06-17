@@ -25,12 +25,16 @@ export default function OfferModal({ isOpen, onClose }: OfferModalProps) {
     const urlRef = urlParams.get('ref');
     
     if (urlRef) {
-      setRefCode(urlRef);
+      requestAnimationFrame(() => {
+        setRefCode(urlRef);
+      });
       localStorage.setItem('refCode', urlRef);
     } else {
       const storedRef = localStorage.getItem('refCode');
       if (storedRef) {
-        setRefCode(storedRef);
+        requestAnimationFrame(() => {
+          setRefCode(storedRef);
+        });
       }
     }
   }, []);

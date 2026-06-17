@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useCart } from "../lib/CartContext";
 import CheckoutModal from "./CheckoutModal";
+import Image from "next/image";
 
 import { type RetailerInfo } from "../lib/api";
 
@@ -67,8 +68,8 @@ export default function CartDrawer({
                 <div key={item.product.slug} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "20px 0", borderBottom: "1px solid rgba(23,58,87,0.06)" }}>
                   
                   {/* Image */}
-                  <div style={{ width: "64px", height: "64px", flexShrink: 0, backgroundColor: "#fff", borderRadius: "12px", border: "1px solid rgba(23,58,87,0.08)", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }}>
-                    <img src={imgSrc} alt={item.product.name} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                  <div style={{ width: "64px", height: "64px", flexShrink: 0, backgroundColor: "#fff", borderRadius: "12px", border: "1px solid rgba(23,58,87,0.08)", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px", position: "relative" }}>
+                    <Image src={imgSrc} alt={item.product.name} width={56} height={56} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
                   </div>
 
                   {/* Info */}
