@@ -52,6 +52,8 @@ import {
   RetailerOrder,
   MarketingDownload,
   uploadVatDocument,
+  getCachedDiscountTiers,
+  getCachedMinOrderValue,
   type CustomerAddressDb
 } from "@/lib/api";
 import { useCart } from "@/lib/CartContext";
@@ -250,6 +252,10 @@ function PortalProductCard({
   const depositTotal = product.deposit * unitsPerBox * qty;
   const hasDeposit = product.deposit > 0;
 
+  const pricePerUnit = pricePerKarton / unitsPerBox;
+  const uvp = product.uvp;
+  const profit = uvp ? uvp - pricePerUnit : null;
+
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col bg-white border border-[#173A57]/10 shadow-sm hover:shadow-md transition-all duration-300">
       {/* Product Image */}
@@ -358,6 +364,34 @@ function PortalProductCard({
             </div>
           )}
 
+          <div className="rounded-lg p-2.5 text-left bg-[#f5f4ef] border border-[#173A57]/10 text-[11px] space-y-1">
+            <div className="flex justify-between">
+              <span className="text-[#173A57]/60">Einzelpreis pro Dose:</span>
+              <span className="font-semibold text-[#173A57]">
+                {pricePerUnit.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € (netto)
+              </span>
+            </div>
+            {uvp ? (
+              <>
+                <div className="border-t border-[#173A57]/5 my-1" />
+                <div className="flex justify-between">
+                  <span className="text-[#173A57]/60">UVP pro Dose:</span>
+                  <span className="font-semibold text-[#173A57]">
+                    {uvp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € (brutto)
+                  </span>
+                </div>
+                {profit !== null && (
+                  <div className="flex justify-between text-[#173A57]">
+                    <span className="font-semibold">Gewinn pro Dose:</span>
+                    <span className="font-bold text-green-600">
+                      {profit.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                    </span>
+                  </div>
+                )}
+              </>
+            ) : null}
+          </div>
+
           <button
             type="button"
             onClick={() => onAddToCart(product, qty, pricePerKarton)}
@@ -375,7 +409,7 @@ function PortalProductCard({
 // ─── Main Portal Page ────────────────────────────────────────────────────────
 
 export default function RetailerPortalPage() {
-  const { addItem, clearCart } = useCart();
+  const { addItem, clearCart, setB2bConfig } = useCart();
 
   // Navigation & Login States
   const [emailInput, setEmailInput] = useState("");
@@ -544,6 +578,7 @@ export default function RetailerPortalPage() {
     try {
       const products = await fetchProducts("DE", email);
       setCatalog(products);
+      setB2bConfig(getCachedDiscountTiers(), getCachedMinOrderValue());
     } catch (err) {
       console.error(err);
       setCatalogError(err instanceof Error ? err.message : "Produkte konnten nicht geladen werden.");

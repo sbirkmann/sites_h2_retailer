@@ -14,7 +14,7 @@ export default function CartDrawer({
   prefilledCustomer?: RetailerInfo;
   initialCode?: string;
 }) {
-  const { items, totalItems, subtotal, totalDeposit, totalShipping, grandTotal, updateQuantity, removeItem, closeCart, isCartOpen } = useCart();
+  const { items, totalItems, subtotal, totalDeposit, totalShipping, discountPercent, discountAmount, minOrderValue, grandTotal, updateQuantity, removeItem, closeCart, isCartOpen } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   
   useEffect(() => {
@@ -51,6 +51,23 @@ export default function CartDrawer({
             <svg width="20" height="20" fill="none" stroke="#173A57" strokeWidth="2.5" strokeLinecap="round" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         </div>
+
+        {/* Minimum Order Value Status Bar */}
+        {items.length > 0 && (
+          <div style={{ padding: "12px 24px 8px 24px", backgroundColor: "#fff", borderBottom: "1px solid rgba(23,58,87,0.04)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 700, marginBottom: "6px" }}>
+              <span>Mindestbestellwert: {fmt(minOrderValue)} (netto)</span>
+              {subtotal < minOrderValue ? (
+                <span style={{ color: "#EF4444" }}>Noch {fmt(Math.max(0, minOrderValue - subtotal))} bis zur Bestellung</span>
+              ) : (
+                <span style={{ color: "#78B833" }}>Mindestbestellwert erreicht!</span>
+              )}
+            </div>
+            <div style={{ width: "100%", height: "8px", backgroundColor: "#E2E8F0", borderRadius: "9999px", overflow: "hidden" }}>
+              <div style={{ width: `${Math.min(100, (subtotal / minOrderValue) * 100)}%`, height: "100%", backgroundColor: subtotal < minOrderValue ? "#EF4444" : "#78B833", transition: "width 0.3s ease-in-out" }} />
+            </div>
+          </div>
+        )}
 
         {/* Items */}
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px" }}>
@@ -105,14 +122,36 @@ export default function CartDrawer({
         {items.length > 0 && (
           <div style={{ padding: "20px 24px", borderTop: "1px solid rgba(23,58,87,0.08)", backgroundColor: "#fff" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", opacity: 0.7 }}><span>Produkte (netto)</span><span>{fmt(subtotal)}</span></div>
+            {discountAmount > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", color: "#78B833", fontWeight: 700 }}>
+                <span>B2B Rabatt ({discountPercent}%)</span>
+                <span>-{fmt(discountAmount)}</span>
+              </div>
+            )}
             {totalShipping > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", opacity: 0.7 }}><span>Versand (Deutschland)</span><span>{fmt(totalShipping)}</span></div>}
             
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed rgba(23,58,87,0.1)", fontSize: "15px", fontWeight: 700 }}><span>Zwischensumme (netto)</span><span>{fmt(subtotal + totalShipping)}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed rgba(23,58,87,0.1)", fontSize: "15px", fontWeight: 700 }}><span>Zwischensumme (netto)</span><span>{fmt(subtotal - discountAmount + totalShipping)}</span></div>
             
             {totalDeposit > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", fontSize: "14px", opacity: 0.7 }}><span>Pfand (steuerfrei)</span><span>{fmt(totalDeposit)}</span></div>}
             
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(23,58,87,0.08)", fontSize: "20px", fontWeight: 800 }}><span>Gesamtsumme</span><span>{fmt(grandTotal)}</span></div>
-            <button className="btn" onClick={() => { closeCart(); setCheckoutOpen(true); }} style={{ width: "100%", marginTop: "24px", padding: "18px", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+            <button 
+              className="btn" 
+              disabled={subtotal < minOrderValue} 
+              onClick={() => { closeCart(); setCheckoutOpen(true); }} 
+              style={{ 
+                width: "100%", 
+                marginTop: "24px", 
+                padding: "18px", 
+                fontSize: "16px", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                gap: "8px",
+                opacity: subtotal < minOrderValue ? 0.5 : 1,
+                cursor: subtotal < minOrderValue ? "not-allowed" : "pointer"
+              }}
+            >
               Zur Kasse
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>

@@ -19,6 +19,11 @@ interface CartContextValue {
   subtotal: number;
   totalDeposit: number;
   totalShipping: number;
+  discountPercent: number;
+  discountAmount: number;
+  discountedSubtotal: number;
+  minOrderValue: number;
+  discountTiers: { from: number; to: number | null; discount_percent: number }[];
   grandTotal: number;
   addItem: (product: DisplayProduct, qty?: number) => void;
   removeItem: (slug: string) => void;
@@ -29,6 +34,7 @@ interface CartContextValue {
   closeCart: () => void;
   toggleCart: () => void;
   refreshCartProducts: (apiProducts: ApiProduct[]) => void;
+  setB2bConfig: (tiers: { from: number; to: number | null; discount_percent: number }[], minOrderVal: number) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -167,6 +173,13 @@ export function calculateShippingCost(items: ShippingCalculationItem[]): number 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [minOrderValue, setMinOrderValue] = useState<number>(200.0);
+  const [discountTiers, setDiscountTiers] = useState<{ from: number; to: number | null; discount_percent: number }[]>([]);
+
+  const setB2bConfig = useCallback((tiers: { from: number; to: number | null; discount_percent: number }[], minOrderVal: number) => {
+    setDiscountTiers(tiers || []);
+    setMinOrderValue(minOrderVal ?? 200.0);
+  }, []);
 
   const addItem = useCallback((product: DisplayProduct, qty = 1) => {
     setItems((prev) => {
@@ -264,7 +277,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Versandkosten
   const totalShipping = calculateShippingCost(items);
 
-  const grandTotal = subtotal + totalDeposit + totalShipping;
+  // B2B discount calculation
+  let discountPercent = 0.0;
+  if (discountTiers && discountTiers.length > 0) {
+    for (const tier of discountTiers) {
+      const from = Number(tier.from);
+      const to = tier.to !== null ? Number(tier.to) : null;
+      if (subtotal >= from && (to === null || subtotal <= to)) {
+        discountPercent = Number(tier.discount_percent);
+        break;
+      }
+    }
+  }
+
+  const discountAmount = Math.round(subtotal * (discountPercent / 100) * 100) / 100;
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+
+  const grandTotal = discountedSubtotal + totalDeposit + totalShipping;
 
   return (
     <CartContext.Provider
@@ -274,6 +303,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         subtotal,
         totalDeposit,
         totalShipping,
+        discountPercent,
+        discountAmount,
+        discountedSubtotal,
+        minOrderValue,
+        discountTiers,
         grandTotal,
         addItem,
         removeItem,
@@ -284,6 +318,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         closeCart: () => setIsCartOpen(false),
         toggleCart: () => setIsCartOpen((v) => !v),
         refreshCartProducts,
+        setB2bConfig,
       }}
     >
       {children}

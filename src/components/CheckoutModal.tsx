@@ -106,7 +106,7 @@ export default function CheckoutModal({
   prefilledCustomer?: RetailerInfo;
   initialCode?: string;
 }) {
-  const { items, subtotal, totalDeposit, clearCart, refreshCartProducts } = useCart();
+  const { items, subtotal, totalDeposit, discountPercent, discountAmount, clearCart, refreshCartProducts } = useCart();
   const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
   const hasPrefilled = !!(prefilledCustomer && initialCode);
@@ -292,7 +292,7 @@ export default function CheckoutModal({
   // ─── VAT calculation ────────────────────────────────────────────────────
   const isVatExempt = !!(vatId && vatChecked && countryCode !== "DE");
   const vatRate = isVatExempt ? 0 : (vatRatesMap[countryCode]?.rate ?? 0.19);
-  const netTotal = subtotal + shippingForCountry;
+  const netTotal = Math.max(0, subtotal - discountAmount) + shippingForCountry;
   const vatAmount = netTotal * vatRate;
   const grossTotal = netTotal + vatAmount + totalDeposit;
 
@@ -450,6 +450,18 @@ export default function CheckoutModal({
       ))}
       <div style={{ borderTop: "1px solid rgba(23,58,87,0.08)", marginTop: "12px", paddingTop: "12px", fontSize: "13px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}><span>Zwischensumme (netto)</span><span>{fmt(subtotal)}</span></div>
+        {discountAmount > 0 && (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", color: "#78B833", fontWeight: 700 }}>
+              <span>B2B Rabatt ({discountPercent}%)</span>
+              <span>-{fmt(discountAmount)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}>
+              <span>Produkte nach Rabatt</span>
+              <span>{fmt(subtotal - discountAmount)}</span>
+            </div>
+          </>
+        )}
         {totalDeposit > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}><span>Pfand</span><span>{fmt(totalDeposit)}</span></div>}
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}>
           <span>Versand ({vatRatesMap[countryCode]?.label || countryCode}, {(vatRate * 100).toFixed(1)}% MwSt.)</span>

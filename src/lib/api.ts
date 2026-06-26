@@ -31,6 +31,7 @@ export interface ApiProduct {
   use_cases?: string[];
   targets?: string[];
   tiers?: ProductTier[];    // Staffelpreise (price = pro Karton)
+  uvp?: number;
 }
 
 export interface CustomerAddress {
@@ -177,9 +178,19 @@ export interface CreateOrderResponse {
 
 // Cache for VAT rates loaded from the API
 let cachedVatRates: Record<string, { label: string; rate: number }> = {};
+let cachedMinOrderValue = 200.0;
+let cachedDiscountTiers: { from: number; to: number | null; discount_percent: number }[] = [];
 
 export function getCachedVatRates(): Record<string, { label: string; rate: number }> {
   return cachedVatRates;
+}
+
+export function getCachedMinOrderValue(): number {
+  return cachedMinOrderValue;
+}
+
+export function getCachedDiscountTiers() {
+  return cachedDiscountTiers;
 }
 
 // ─── API Functions ──────────────────────────────────────────────────────────
@@ -195,6 +206,12 @@ export async function fetchProducts(countryCode = "DE", email?: string): Promise
 
   if (data.vat_rates) {
     cachedVatRates = data.vat_rates;
+  }
+  if (data.min_order_value !== undefined) {
+    cachedMinOrderValue = Number(data.min_order_value);
+  }
+  if (data.discount_tiers) {
+    cachedDiscountTiers = data.discount_tiers;
   }
   
   // Sanitize shipping_multiplier because the remote API might return vonexio_product_multiplicator (e.g. 30)
