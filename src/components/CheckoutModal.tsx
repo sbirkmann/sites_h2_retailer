@@ -232,15 +232,42 @@ export default function CheckoutModal({
     }
   }, [prefilledCustomer, refreshCartProducts]);
 
-  // Initialize refCode from localStorage
+  // Initialize refCode from URL query params (?ref=), cookies, or localStorage
   useEffect(() => {
-    const storedRef = localStorage.getItem("refCode");
-    if (storedRef) {
-      const timer = setTimeout(() => {
-        setRefCode(storedRef);
-        setRefCodeIsPrefilled(true);
-      }, 0);
-      return () => clearTimeout(timer);
+    // Helper to read cookies in browser context
+    const getCookie = (name: string): string | undefined => {
+      if (typeof document === "undefined") return undefined;
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift();
+      return undefined;
+    };
+
+    // 1. Check URL query params
+    const urlParams = new URLSearchParams(window.location.search);
+    let codeVal: string | null | undefined = urlParams.get("ref");
+    
+    // 2. Check cookies if not in URL
+    if (!codeVal) {
+      codeVal = getCookie("ref") || getCookie("refCode") || getCookie("ref_code") || getCookie("affiliate_code");
+    }
+    
+    // 3. Check localStorage
+    if (!codeVal) {
+      codeVal = localStorage.getItem("refCode");
+    }
+    
+    if (codeVal) {
+      const cleanCode = codeVal.trim();
+      if (cleanCode) {
+        const timer = setTimeout(() => {
+          setRefCode(cleanCode);
+          setRefCodeIsPrefilled(true);
+          // Sync/persist to localStorage
+          localStorage.setItem("refCode", cleanCode);
+        }, 0);
+        return () => clearTimeout(timer);
+      }
     }
   }, []);
 
@@ -677,10 +704,12 @@ export default function CheckoutModal({
                   </select>
                 </div>
               </div>
-              <div style={{ marginBottom: "24px" }}>
-                <label style={labelStyle}>Empfehlungscode (optional)</label>
-                <input type="text" value={refCode} onChange={(e) => setRefCode(e.target.value)} readOnly={refCodeIsPrefilled} placeholder="z.B. PARTNER123" style={{ ...inputStyle, opacity: refCodeIsPrefilled ? 0.6 : 1, cursor: refCodeIsPrefilled ? "not-allowed" : "text", backgroundColor: refCodeIsPrefilled ? "#f8f9fa" : "#fff" }} />
-              </div>
+              {!refCodeIsPrefilled && (
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={labelStyle}>Empfehlungscode (optional)</label>
+                  <input type="text" value={refCode} onChange={(e) => setRefCode(e.target.value)} placeholder="z.B. PARTNER123" style={inputStyle} />
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: "12px" }}>
                 <button onClick={() => { setStep("code"); setError(""); }} style={{ ...btnSecondaryStyle, flex: 1, padding: "14px" }}>Zurück</button>
