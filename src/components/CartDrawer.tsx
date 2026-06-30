@@ -136,20 +136,27 @@ export default function CartDrawer({
             
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(23,58,87,0.08)", fontSize: "20px", fontWeight: 800 }}><span>Gesamtsumme</span><span>{fmt(grandTotal)}</span></div>
             <button 
-              className="btn" 
               disabled={subtotal < minOrderValue} 
               onClick={() => { closeCart(); setCheckoutOpen(true); }} 
               style={{ 
                 width: "100%", 
                 marginTop: "24px", 
-                padding: "18px", 
-                fontSize: "16px", 
+                padding: "16px", 
+                fontSize: "15px", 
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                backgroundColor: subtotal < minOrderValue ? "rgba(23,58,87,0.15)" : "#173A57", 
+                color: subtotal < minOrderValue ? "rgba(23,58,87,0.4)" : "#fff",
+                border: "none",
+                borderRadius: "14px",
                 display: "flex", 
                 alignItems: "center", 
                 justifyContent: "center", 
                 gap: "8px",
-                opacity: subtotal < minOrderValue ? 0.5 : 1,
-                cursor: subtotal < minOrderValue ? "not-allowed" : "pointer"
+                boxShadow: subtotal < minOrderValue ? "none" : "0 4px 12px rgba(23,58,87,0.15)",
+                cursor: subtotal < minOrderValue ? "not-allowed" : "pointer",
+                transition: "all 0.2s ease-in-out"
               }}
             >
               Zur Kasse

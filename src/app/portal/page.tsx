@@ -373,33 +373,27 @@ function PortalProductCard({
             </div>
           )}
 
-          <div className="rounded-lg p-2.5 text-left bg-[#f5f4ef] border border-[#173A57]/10 text-[11px] space-y-1">
-            <div className="flex justify-between">
-              <span className="text-[#173A57]/60">Einzelpreis pro Dose:</span>
-              <span className="font-semibold text-[#173A57]">
-                {pricePerUnit.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € (netto)
-              </span>
-            </div>
-            {uvp ? (
-              <>
-                <div className="border-t border-[#173A57]/5 my-1" />
-                <div className="flex justify-between">
-                  <span className="text-[#173A57]/60">UVP pro Dose:</span>
-                  <span className="font-semibold text-[#173A57]">
-                    {uvp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € (brutto)
-                  </span>
-                </div>
-                {profit !== null && (
+          {uvp ? (
+            <div className="rounded-lg p-2.5 text-left bg-[#f5f4ef] border border-[#173A57]/10 text-[11px] space-y-1">
+              <div className="flex justify-between">
+                <span className="text-[#173A57]/60">UVP pro Dose:</span>
+                <span className="font-semibold text-[#173A57]">
+                  {uvp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € (brutto)
+                </span>
+              </div>
+              {profit !== null && (
+                <>
+                  <div className="border-t border-[#173A57]/5 my-1" />
                   <div className="flex justify-between text-[#173A57]">
                     <span className="font-semibold">Gewinn pro Dose:</span>
                     <span className="font-bold text-green-600">
                       {profit.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                     </span>
                   </div>
-                )}
-              </>
-            ) : null}
-          </div>
+                </>
+              )}
+            </div>
+          ) : null}
 
           <button
             type="button"
