@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/json",
         Authorization: `Bearer ${API_SECRET}`,
       },
       body: JSON.stringify(body),
@@ -27,9 +28,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(data, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Order proxy error:", error);
     return NextResponse.json(
-      { error: "Bestellung konnte nicht verarbeitet werden." },
+      { error: error instanceof Error ? error.message : "Bestellung konnte nicht verarbeitet werden." },
       { status: 500 }
     );
   }
