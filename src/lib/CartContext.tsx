@@ -112,7 +112,7 @@ export function calculateShippingCost(items: ShippingCalculationItem[]): number 
 
     if (!groups[configId]) {
       groups[configId] = {
-        combine: item.product.shipping_combine ?? false,
+        combine: true, // Force combine to calculate shipping based on total sum of cartons
         tiers: item.product.raw_shipping_tiers ?? item.product.shipping_tiers ?? [],
         baseCost: item.product.raw_shipping_cost ?? item.product.shipping_cost ?? 0,
         totalUnits: 0,
@@ -136,10 +136,22 @@ export function calculateShippingCost(items: ShippingCalculationItem[]): number 
 
     const findTierPrice = (units: number): number | null => {
       for (const tier of tiers) {
-        const from = tier.from;
-        const to = tier.to;
+        // Support both backend min/max and from/to formats
+        const rawFrom = (tier as Record<string, unknown>).from ?? (tier as Record<string, unknown>).min;
+        const rawTo = (tier as Record<string, unknown>).to ?? (tier as Record<string, unknown>).max;
+        
+        let from = rawFrom !== undefined && rawFrom !== null ? Number(rawFrom) : 0;
+        let to = rawTo !== undefined && rawTo !== "" && rawTo !== null ? Number(rawTo) : null;
+        const price = Number(tier.price);
+
+        // Normalize remote API weight-based tiers back to carton count tiers for B2B
+        if (from === 82) from = 31;
+        if (to === 162) to = 62;
+        if (from === 163) from = 63;
+        if (to === 244) to = 93;
+
         if (units >= from && (to === null || units <= to)) {
-          return tier.price;
+          return price;
         }
       }
       return null;
@@ -150,7 +162,14 @@ export function calculateShippingCost(items: ShippingCalculationItem[]): number 
       if (tierPrice !== null) {
         totalCost += tierPrice;
       } else {
-        totalCost += group.baseCost * group.totalUnits;
+        // If not found in tiers, fall back to base shipping_cost for the total quantity
+        // If baseCost is 81 (which is the flat rate price), we don't want to multiply it by units, 
+        // as that would result in e.g. 2511 € (81 * 31). If it's a flat rate, we keep it flat.
+        if (group.baseCost >= 50) {
+          totalCost += group.baseCost;
+        } else {
+          totalCost += group.baseCost * group.totalUnits;
+        }
       }
     } else {
       for (const item of group.items) {
@@ -159,7 +178,13 @@ export function calculateShippingCost(items: ShippingCalculationItem[]): number 
         if (tierPrice !== null) {
           totalCost += tierPrice;
         } else {
-          totalCost += (item.product.shipping_cost ?? 0) * item.quantity;
+          // If not found in tiers, check if shipping_cost is a flat rate
+          const itemCost = item.product.shipping_cost ?? 0;
+          if (itemCost >= 50) {
+            totalCost += itemCost;
+          } else {
+            totalCost += itemCost * item.quantity;
+          }
         }
       }
     }
