@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://h2vitaldash.x900.3az.de/api";
-const API_SECRET = process.env.MANUAL_DELIVERY_API_SECRET || "";
+const API_SECRET = process.env.MANUAL_DELIVERY_API_SECRET || "eOIDM84Be3CmeuXqP/UWt272tBEufy+YnqVXXNHRbpk=";
 
 /**
  * Server-side proxy for creating orders.

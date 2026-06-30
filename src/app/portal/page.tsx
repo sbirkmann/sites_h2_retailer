@@ -277,16 +277,16 @@ function PortalProductCard({
 
       {/* Content */}
       <div className="p-5 flex flex-col flex-1">
-        <div className="mb-3">
+        <div className="mb-3 min-h-[52px]">
           {product.subtitle && (
             <p className="text-xs font-bold uppercase tracking-widest mb-0.5 text-[#173A57]/50">{product.subtitle}</p>
           )}
-          <h3 className="text-lg font-bold uppercase text-[#173A57]">{product.name}</h3>
+          <h3 className="text-lg font-bold uppercase text-[#173A57] leading-snug">{product.name}</h3>
         </div>
 
-        {product.description && (
-          <p className="text-xs leading-relaxed mb-4 text-[#173A57]/60">{product.description}</p>
-        )}
+        <div className="text-xs leading-relaxed mb-4 text-[#173A57]/60 min-h-[58px]">
+          {product.description || ""}
+        </div>
 
         {/* Tiers List */}
         {tiers.length > 0 && (

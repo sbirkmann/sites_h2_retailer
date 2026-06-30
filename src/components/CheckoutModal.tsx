@@ -122,17 +122,6 @@ export default function CheckoutModal({
 
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (prefilledCustomer && email && code) {
-      getRetailerAddresses(email, code)
-        .then((addrs) => {
-          setSavedAddresses(addrs);
-        })
-        .catch((err) => {
-          console.error("Failed to load saved retailer addresses in checkout:", err);
-        });
-    }
-  }, [prefilledCustomer, email, code]);
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState("");
   const [vatRatesMap, setVatRatesMap] = useState<Record<string, { label: string; rate: number }>>(VAT_RATES);
@@ -151,6 +140,29 @@ export default function CheckoutModal({
   const [vatId, setVatId] = useState(prefilledCustomer?.vat_id || "");
   const [vatChecked, setVatChecked] = useState(prefilledCustomer?.vat_checked || false);
   const [vatLoading, setVatLoading] = useState(false);
+
+  useEffect(() => {
+    if (prefilledCustomer && email && code) {
+      getRetailerAddresses(email, code)
+        .then((addrs) => {
+          setSavedAddresses(addrs);
+          if (addrs && addrs.length > 0) {
+            const latest = addrs[addrs.length - 1];
+            setSelectedAddressId(latest.id.toString());
+            setFirstName(latest.first_name || "");
+            setLastName(latest.last_name || "");
+            setPhone(latest.phone || "");
+            setStreet(latest.address1 || "");
+            setZip(latest.zip || "");
+            setCity(latest.city || "");
+            setCountryCode(latest.country || "DE");
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load saved retailer addresses in checkout:", err);
+        });
+    }
+  }, [prefilledCustomer, email, code]);
 
   const handleAddressSelect = (addrId: string) => {
     setSelectedAddressId(addrId);
