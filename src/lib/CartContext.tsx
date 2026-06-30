@@ -127,7 +127,6 @@ export function calculateShippingCost(items: ShippingCalculationItem[]): number 
   for (const configId in groups) {
     const group = groups[configId];
     const tiers = group.tiers;
-    const combine = group.combine;
 
     if (!tiers || tiers.length === 0) {
       totalCost += group.baseCost * group.totalUnits;
@@ -157,34 +156,41 @@ export function calculateShippingCost(items: ShippingCalculationItem[]): number 
       return null;
     };
 
-    if (combine) {
-      const tierPrice = findTierPrice(group.totalUnits);
+    // Separate items into combined (product.shipping_combine === true) and individual
+    const combinedItems = group.items.filter(item => item.product.shipping_combine === true);
+    const individualItems = group.items.filter(item => item.product.shipping_combine !== true);
+
+    // 1. Process combined items together
+    if (combinedItems.length > 0) {
+      const combinedUnits = combinedItems.reduce((sum, item) => {
+        const multiplier = item.product.shipping_multiplier ?? 1;
+        return sum + (item.quantity * multiplier);
+      }, 0);
+
+      const tierPrice = findTierPrice(combinedUnits);
       if (tierPrice !== null) {
         totalCost += tierPrice;
       } else {
-        // If not found in tiers, fall back to base shipping_cost for the total quantity
-        // If baseCost is 81 (which is the flat rate price), we don't want to multiply it by units, 
-        // as that would result in e.g. 2511 € (81 * 31). If it's a flat rate, we keep it flat.
         if (group.baseCost >= 50) {
           totalCost += group.baseCost;
         } else {
-          totalCost += group.baseCost * group.totalUnits;
+          totalCost += group.baseCost * combinedUnits;
         }
       }
-    } else {
-      for (const item of group.items) {
-        const itemUnits = item.quantity * (item.product.shipping_multiplier ?? 1);
-        const tierPrice = findTierPrice(itemUnits);
-        if (tierPrice !== null) {
-          totalCost += tierPrice;
+    }
+
+    // 2. Process individual items separately
+    for (const item of individualItems) {
+      const itemUnits = item.quantity * (item.product.shipping_multiplier ?? 1);
+      const tierPrice = findTierPrice(itemUnits);
+      if (tierPrice !== null) {
+        totalCost += tierPrice;
+      } else {
+        const itemCost = item.product.shipping_cost ?? 0;
+        if (itemCost >= 50) {
+          totalCost += itemCost;
         } else {
-          // If not found in tiers, check if shipping_cost is a flat rate
-          const itemCost = item.product.shipping_cost ?? 0;
-          if (itemCost >= 50) {
-            totalCost += itemCost;
-          } else {
-            totalCost += itemCost * item.quantity;
-          }
+          totalCost += itemCost * item.quantity;
         }
       }
     }
