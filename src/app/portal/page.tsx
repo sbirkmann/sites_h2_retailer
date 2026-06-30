@@ -299,17 +299,26 @@ function PortalProductCard({
               {tiers.map((tier, i) => {
                 const isActive = i === activeTierIndex;
                 const label = tier.max === null ? `ab ${tier.min} Kartons` : `${tier.min}–${tier.max} Karton${tier.max !== 1 ? "s" : ""}`;
+                const tierPricePerUnit = tier.price / unitsPerBox;
                 return (
-                  <div key={i} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-all duration-200 ${isActive ? "bg-[#173A57] text-white" : "bg-white border border-[#173A57]/5"}`}>
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 ${isActive ? "bg-[#FDF277]" : "bg-[#173A57]/10"}`}>
-                        {isActive && <Check size={8} className="text-[#173A57]" />}
+                  <div key={i} className={`flex flex-col gap-1 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${isActive ? "bg-[#173A57] text-white" : "bg-white border border-[#173A57]/5"}`}>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 ${isActive ? "bg-[#FDF277]" : "bg-[#173A57]/10"}`}>
+                          {isActive && <Check size={8} className="text-[#173A57]" />}
+                        </div>
+                        <span className={`text-[11px] font-medium ${isActive ? "text-white" : "text-[#173A57]/60"}`}>{label}</span>
                       </div>
-                      <span className={`text-[11px] font-medium ${isActive ? "text-white" : "text-[#173A57]/60"}`}>{label}</span>
+                      <span className={`text-xs font-bold ${isActive ? "text-[#FDF277]" : "text-[#173A57]/80"}`}>
+                        {tier.price.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </span>
                     </div>
-                    <span className={`text-xs font-bold ${isActive ? "text-[#FDF277]" : "text-[#173A57]/80"}`}>
-                      {tier.price.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                    </span>
+                    <div className="flex justify-between w-full pl-5 text-[9px]">
+                      <span className={`${isActive ? "text-white/70" : "text-[#173A57]/45"}`}>Einzelpreis pro Dose:</span>
+                      <span className={`font-semibold ${isActive ? "text-[#FDF277]" : "text-[#173A57]/60"}`}>
+                        {tierPricePerUnit.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </span>
+                    </div>
                   </div>
                 );
               })}
@@ -323,7 +332,7 @@ function PortalProductCard({
         {/* Quantity Select and calculation */}
         <div className="space-y-2.5">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 flex-1 bg-[#f5f4ef] border border-[#173A57]/10">
+            <div className="flex items-center gap-2.5 rounded-full px-4 flex-1 bg-[#f5f4ef] border border-[#173A57]/10 h-11">
               <button 
                 type="button"
                 onClick={() => setQty(Math.max(1, qty - 1))} 
@@ -346,7 +355,7 @@ function PortalProductCard({
               </button>
             </div>
 
-            <div className="rounded-lg px-3 py-2 text-right bg-[#f5f4ef] border border-[#173A57]/10 min-w-[85px] h-[38px] flex flex-col justify-center">
+            <div className="rounded-full px-4 text-right bg-[#f5f4ef] border border-[#173A57]/10 min-w-[95px] h-11 flex flex-col justify-center">
               <div className="text-[9px] text-[#173A57]/50 leading-none mb-0.5">Netto</div>
               <div className="text-xs font-bold text-[#173A57] leading-none">
                 {productTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
@@ -409,7 +418,7 @@ function PortalProductCard({
 // ─── Main Portal Page ────────────────────────────────────────────────────────
 
 export default function RetailerPortalPage() {
-  const { addItem, clearCart, setB2bConfig } = useCart();
+  const { items, subtotal, minOrderValue, addItem, clearCart, setB2bConfig } = useCart();
 
   // Navigation & Login States
   const [emailInput, setEmailInput] = useState("");
@@ -2077,6 +2086,25 @@ export default function RetailerPortalPage() {
                     Wähle hier deine Produkte und lege sie in den Warenkorb. Die Staffelpreise gelten automatisch basierend auf der Menge.
                   </p>
                 </div>
+
+                {items.length > 0 && (
+                  <div className="bg-[#f5f4ef] border border-[#173A57]/10 rounded-xl p-4 space-y-2">
+                    <div className="flex flex-col sm:flex-row justify-between text-xs font-bold gap-1">
+                      <span className="text-[#173A57]">Mindestbestellwert: {minOrderValue.toLocaleString("de-DE", { style: "currency", currency: "EUR" })} (netto)</span>
+                      {subtotal < minOrderValue ? (
+                        <span className="text-red-600">Noch {(minOrderValue - subtotal).toLocaleString("de-DE", { style: "currency", currency: "EUR" })} bis zur Bestellung</span>
+                      ) : (
+                        <span className="text-green-600">Mindestbestellwert erreicht!</span>
+                      )}
+                    </div>
+                    <div className="w-full h-2.5 bg-[#173A57]/10 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${subtotal < minOrderValue ? "bg-red-500" : "bg-green-600"}`}
+                        style={{ width: `${Math.min(100, (subtotal / minOrderValue) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {catalogLoading && (
                   <div className="flex flex-col items-center justify-center py-16 gap-3">
