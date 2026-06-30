@@ -70,31 +70,36 @@ const btnSecondaryStyle: React.CSSProperties = {
   textDecoration: "none",
 };
 
+function normalizeCountryCode(country: string | null | undefined): string {
+  if (!country) return "DE";
+  const val = country.trim();
+  if (val.length === 2) return val.toUpperCase();
+  
+  const map: Record<string, string> = {
+    germany: "DE", deutschland: "DE", de: "DE",
+    austria: "AT", österreich: "AT", at: "AT",
+    switzerland: "CH", schweiz: "CH", ch: "CH",
+    netherlands: "NL", niederlande: "NL", holland: "NL", nl: "NL",
+    belgium: "BE", belgien: "BE", be: "BE",
+    france: "FR", frankreich: "FR", fr: "FR",
+    italy: "IT", italien: "IT", it: "IT",
+    spain: "ES", spanien: "ES", es: "ES",
+    poland: "PL", polen: "PL", pl: "PL",
+    "united states": "US", usa: "US", us: "US",
+    "united kingdom": "GB", großbritannien: "GB", uk: "GB", england: "GB", gb: "GB",
+    denmark: "DK", dänemark: "DK", dk: "DK",
+    sweden: "SE", schweden: "SE", se: "SE",
+    norway: "NO", norwegen: "NO", no: "NO",
+    finland: "FI", finnland: "FI", fi: "FI",
+    "czech republic": "CZ", czechia: "CZ", tschechien: "CZ", cz: "CZ",
+  };
+  
+  return map[val.toLowerCase()] || "DE";
+}
+
 function getCountryCodeFromAddress(address: RetailerInfo["address"]): string {
-  if (!address || !address.country_code) return "DE";
-  const rawCountry = address.country_code;
-  if (rawCountry.length > 2) {
-    const map: Record<string, string> = {
-      germany: "DE", deutschland: "DE",
-      austria: "AT", österreich: "AT",
-      switzerland: "CH", schweiz: "CH",
-      netherlands: "NL", niederlande: "NL", holland: "NL",
-      belgium: "BE", belgien: "BE",
-      france: "FR", frankreich: "FR",
-      italy: "IT", italien: "IT",
-      spain: "ES", spanien: "ES",
-      poland: "PL", polen: "PL",
-      "united states": "US", usa: "US",
-      "united kingdom": "GB", großbritannien: "GB", uk: "GB", england: "GB",
-      denmark: "DK", dänemark: "DK",
-      sweden: "SE", schweden: "SE",
-      norway: "NO", norwegen: "NO",
-      finland: "FI", finnland: "FI",
-      "czech republic": "CZ", czechia: "CZ", tschechien: "CZ",
-    };
-    return map[rawCountry.toLowerCase()] || "DE";
-  }
-  return rawCountry;
+  if (!address) return "DE";
+  return normalizeCountryCode(address.country_code);
 }
 
 export default function CheckoutModal({ 
@@ -155,7 +160,7 @@ export default function CheckoutModal({
             setStreet(latest.address1 || "");
             setZip(latest.zip || "");
             setCity(latest.city || "");
-            setCountryCode(latest.country || "DE");
+            setCountryCode(normalizeCountryCode(latest.country));
           }
         })
         .catch((err) => {
@@ -185,7 +190,7 @@ export default function CheckoutModal({
         setStreet(selected.address1 || "");
         setZip(selected.zip || "");
         setCity(selected.city || "");
-        setCountryCode(selected.country || "DE");
+        setCountryCode(normalizeCountryCode(selected.country));
       }
     }
   };
