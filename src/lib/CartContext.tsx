@@ -143,6 +143,10 @@ export function calculateShippingCost(items: ShippingCalculationItem[]): number 
         let to = rawTo !== undefined && rawTo !== "" && rawTo !== null ? Number(rawTo) : null;
         const price = Number(tier.price);
 
+        // Staffeln ohne verwertbaren Preis (z.B. reine Logistik-Konfigs) überspringen,
+        // sonst würde NaN in die Versandsumme laufen.
+        if (!Number.isFinite(price) || !Number.isFinite(from)) continue;
+
         // Normalize remote API weight-based tiers back to carton count tiers for B2B
         if (from === 82) from = 31;
         if (to === 162) to = 62;
