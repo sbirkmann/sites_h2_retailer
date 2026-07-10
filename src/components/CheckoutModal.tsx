@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useCart, calculateShippingCost } from "../lib/CartContext";
-import { sendLoginCode, verifyLoginCode, createOrder, fetchProducts, getCachedVatRates, validateVatId, getRetailerAddresses, type OrderItem, type RetailerInfo, type CustomerAddressDb } from "../lib/api";
+import { sendLoginCode, verifyLoginCode, createOrder, fetchProducts, fetchShippingCost, getCachedVatRates, validateVatId, getRetailerAddresses, type OrderItem, type RetailerInfo, type CustomerAddressDb } from "../lib/api";
 
 // ─── VAT rates by country ───────────────────────────────────────────────────
 const VAT_RATES: Record<string, { label: string; rate: number }> = {
@@ -276,67 +276,96 @@ export default function CheckoutModal({
     }
   }, []);
 
-  // Live shipping cost based on selected country
-  const [shippingForCountry, setShippingForCountry] = useState<number>(0);
-  const [shippingLoading, setShippingLoading] = useState(true);
+  // Live shipping cost. Für shipping_dynamic-Produkte wird der Preis erst nach
+  // PLZ-Eingabe serverseitig berechnet und bleibt bis dahin unbekannt (null).
+  const [shippingCost, setShippingCost] = useState<number | null>(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState("");
+  const [shippingCheckedSig, setShippingCheckedSig] = useState<string | null>(null);
 
-  // Fetch shipping cost when country changes
+  // Warenkorb-Positionen im Format des /retailer/shipping-Endpoints.
+  const shippingItems = items.map((i) =>
+    i.product.type === "bundle"
+      ? { bunde_product_id: i.product.id, quantity: i.quantity }
+      : { product_id: i.product.id, quantity: i.quantity }
+  );
+  const hasDynamicShipping = items.some((i) => i.product.shipping_dynamic === true);
+  const itemsSig = items.map((i) => `${i.product.type}:${i.product.id}:${i.quantity}`).join(",");
+  // Signatur der Eingaben, für die der Versand zuletzt berechnet wurde.
+  const currentShippingSig = `${countryCode}|${zip.trim()}|${itemsSig}`;
+  const shippingUpToDate = shippingCheckedSig === currentShippingSig && shippingCost !== null;
+  // Bei dynamischem Versand muss der Kunde die PLZ zuerst prüfen lassen.
+  const requireShippingCheck = hasDynamicShipping && !shippingUpToDate;
+
+  // Refresh der Länder-/MwSt.-Sätze bei Länderwechsel.
   useEffect(() => {
     let cancelled = false;
-    const timer = setTimeout(() => {
-      setShippingLoading(true);
-    }, 0);
     fetchProducts(countryCode, email)
-      .then((apiProducts) => {
+      .then(() => {
         if (cancelled) return;
-        
-        // Update VAT rates map from API cache
         const apiVatRates = getCachedVatRates();
         if (apiVatRates && Object.keys(apiVatRates).length > 0) {
           setVatRatesMap(apiVatRates);
         }
-
-        // Calculate total shipping cost using the new helper
-        const calculationItems = items.map((cartItem) => {
-          const apiMatch = apiProducts.find(
-            (ap) => ap.id === cartItem.product.id && ap.type === cartItem.product.type
-          );
-          return {
-            product: apiMatch ? {
-              id: apiMatch.id,
-              type: apiMatch.type,
-              shipping_cost: apiMatch.shipping_cost,
-              shipping_config_id: apiMatch.shipping_config_id,
-              shipping_combine: apiMatch.shipping_combine,
-              shipping_tiers: apiMatch.shipping_tiers,
-              shipping_multiplier: apiMatch.shipping_multiplier,
-              raw_shipping_cost: apiMatch.raw_shipping_cost,
-              raw_shipping_tiers: apiMatch.raw_shipping_tiers,
-            } : cartItem.product,
-            quantity: cartItem.quantity,
-          };
-        });
-        const sumShipping = calculateShippingCost(calculationItems);
-        setShippingForCountry(sumShipping);
       })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [countryCode, email]);
+
+  // Berechnet die Versandkosten serverseitig. Gibt true zurück, wenn danach
+  // ein verlässlicher Betrag vorliegt (Bestellen erlaubt).
+  const checkShipping = async (): Promise<boolean> => {
+    if (items.length === 0) return false;
+    if (hasDynamicShipping && !zip.trim()) {
+      setShippingError("Bitte PLZ eingeben, um den Versand zu berechnen.");
+      return false;
+    }
+    setShippingLoading(true);
+    setShippingError("");
+    const sig = currentShippingSig;
+    try {
+      const cost = await fetchShippingCost(countryCode, zip.trim(), shippingItems);
+      setShippingCost(cost);
+      setShippingCheckedSig(sig);
+      return true;
+    } catch {
+      if (hasDynamicShipping) {
+        setShippingError("Versandkosten konnten nicht berechnet werden. Bitte später erneut versuchen.");
+        return false;
+      }
+      // Statischer Versand: lokaler Fallback ist für diese Produkte korrekt.
+      const local = calculateShippingCost(items);
+      setShippingCost(Number.isFinite(local) ? local : 0);
+      setShippingCheckedSig(sig);
+      return true;
+    } finally {
+      setShippingLoading(false);
+    }
+  };
+
+  // Statischer Versand kann ohne PLZ automatisch berechnet werden.
+  useEffect(() => {
+    if (hasDynamicShipping || items.length === 0) return;
+    let cancelled = false;
+    const sig = currentShippingSig;
+    setShippingLoading(true);
+    fetchShippingCost(countryCode, zip.trim(), shippingItems)
+      .then((cost) => { if (!cancelled) { setShippingCost(cost); setShippingCheckedSig(sig); } })
       .catch(() => {
-        if (!cancelled) {
-          // Fallback to cart's static shipping
-          const sumStatic = calculateShippingCost(items);
-          setShippingForCountry(sumStatic);
-        }
+        if (cancelled) return;
+        const local = calculateShippingCost(items);
+        setShippingCost(Number.isFinite(local) ? local : 0);
+        setShippingCheckedSig(sig);
       })
       .finally(() => { if (!cancelled) setShippingLoading(false); });
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [countryCode, items, email]);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentShippingSig, hasDynamicShipping]);
 
   // ─── VAT calculation ────────────────────────────────────────────────────
   const isVatExempt = !!(vatId && vatChecked && countryCode !== "DE");
   const vatRate = isVatExempt ? 0 : (vatRatesMap[countryCode]?.rate ?? 0.19);
-  const netTotal = Math.max(0, subtotal - discountAmount) + shippingForCountry;
+  const netTotal = Math.max(0, subtotal - discountAmount) + (shippingCost ?? 0);
   const vatAmount = netTotal * vatRate;
   const grossTotal = netTotal + vatAmount + totalDeposit;
 
@@ -509,7 +538,7 @@ export default function CheckoutModal({
         {totalDeposit > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}><span>Pfand</span><span>{fmt(totalDeposit)}</span></div>}
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}>
           <span>Versand ({vatRatesMap[countryCode]?.label || countryCode}, {(vatRate * 100).toFixed(1)}% MwSt.)</span>
-          <span>{shippingLoading ? "..." : shippingForCountry > 0 ? fmt(shippingForCountry) : "Kostenfrei"}</span>
+          <span>{shippingLoading ? "..." : requireShippingCheck ? "PLZ prüfen" : (shippingCost ?? 0) > 0 ? fmt(shippingCost ?? 0) : "Kostenfrei"}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", opacity: 0.7 }}>
           <span>MwSt. ({(vatRate * 100).toFixed(1)}%){isVatExempt ? " (Steuerfreie innergem. Lieferung)" : ""}</span>
@@ -716,11 +745,21 @@ export default function CheckoutModal({
                 </div>
               )}
 
+              {shippingError && (
+                <div style={{ color: "#EF4444", fontSize: "13px", marginBottom: "12px" }}>{shippingError}</div>
+              )}
+
               <div style={{ display: "flex", gap: "12px" }}>
                 <button onClick={() => { setStep("code"); setError(""); }} style={{ ...btnSecondaryStyle, flex: 1, padding: "14px" }}>Zurück</button>
-                <button onClick={handleSubmitOrder} disabled={loading} style={{ ...btnStyle, flex: 2, padding: "14px", fontSize: "16px", opacity: loading ? 0.6 : 1 }}>
-                  Zahlungspflichtig bestellen
-                </button>
+                {requireShippingCheck ? (
+                  <button onClick={checkShipping} disabled={shippingLoading} style={{ ...btnStyle, flex: 2, padding: "14px", fontSize: "16px", opacity: shippingLoading ? 0.6 : 1 }}>
+                    {shippingLoading ? "Versand wird berechnet…" : "Versand prüfen"}
+                  </button>
+                ) : (
+                  <button onClick={handleSubmitOrder} disabled={loading || shippingLoading} style={{ ...btnStyle, flex: 2, padding: "14px", fontSize: "16px", opacity: (loading || shippingLoading) ? 0.6 : 1 }}>
+                    Zahlungspflichtig bestellen
+                  </button>
+                )}
               </div>
             </>
           )}

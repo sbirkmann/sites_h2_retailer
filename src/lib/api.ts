@@ -22,6 +22,7 @@ export interface ApiProduct {
   shipping_multiplier?: number;
   raw_shipping_cost?: number;
   raw_shipping_tiers?: { from: number; to: number | null; price: number }[];
+  shipping_dynamic?: boolean; // true = Versandpreis erst nach PLZ-Eingabe über /retailer/shipping bekannt
   // ── Reichhaltige Produktdaten (von API) ──────────────────────────────────
   subtitle?: string;
   description?: string;
@@ -283,6 +284,47 @@ export async function createOrder(payload: CreateOrderPayload): Promise<CreateOr
     throw new Error(errBody.error || "Bestellung fehlgeschlagen.");
   }
   return res.json();
+}
+
+export interface ShippingCostItem {
+  product_id?: number;
+  bunde_product_id?: number;
+  quantity: number;
+}
+
+export interface ShippingCostResponse {
+  success: boolean;
+  country_code: string;
+  zip: string | null;
+  shipping_cost: number;
+}
+
+/**
+ * Berechnet die Versandkosten für den kompletten Warenkorb serverseitig
+ * (dieselbe Logik wie bei der Bestellung). Öffentlich, keine Auth.
+ * Für Produkte mit shipping_dynamic: true ist die PLZ erforderlich.
+ */
+export async function fetchShippingCost(
+  countryCode: string,
+  zip: string,
+  items: ShippingCostItem[]
+): Promise<number> {
+  const res = await fetch(`${API_BASE}/retailer/shipping`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      country_code: countryCode,
+      ...(zip ? { zip } : {}),
+      items,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message || "Versandkosten konnten nicht berechnet werden.");
+  }
+  const data: ShippingCostResponse = await res.json();
+  const cost = Number(data.shipping_cost);
+  return Number.isFinite(cost) ? cost : 0;
 }
 
 export async function getRetailerPortalAccessCode(email: string): Promise<RetailerAccessCodeResponse> {
