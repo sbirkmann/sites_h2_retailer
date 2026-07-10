@@ -27,11 +27,23 @@ export interface ApiProduct {
   description?: string;
   image?: string;
   units_per_item?: number;  // Einheiten pro Karton (z.B. 30 Dosen)
+  step_size?: number;       // Bestell-Schrittweite in Kartons (z.B. 30 = nur Vielfache von 30)
   benefits?: string[];
   use_cases?: string[];
   targets?: string[];
   tiers?: ProductTier[];    // Staffelpreise (price = pro Karton)
   uvp?: number;
+}
+
+/** Bestell-Schrittweite eines Produkts, immer >= 1. */
+export function getStepSize(product: Pick<ApiProduct, "step_size">): number {
+  const step = Math.floor(Number(product.step_size));
+  return Number.isFinite(step) && step > 0 ? step : 1;
+}
+
+/** Rundet eine Menge auf das nächste Vielfache der Schrittweite (min. ein Schritt). */
+export function snapToStep(qty: number, step: number): number {
+  return Math.max(step, Math.round(qty / step) * step);
 }
 
 export interface CustomerAddress {

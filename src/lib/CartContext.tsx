@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import type { DisplayProduct } from "./products";
-import type { ApiProduct } from "./api";
+import { getStepSize, snapToStep, type ApiProduct } from "./api";
 
 // ─── Cart Item ──────────────────────────────────────────────────────────────
 
@@ -213,10 +213,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addItem = useCallback((product: DisplayProduct, qty = 1) => {
+    const step = getStepSize(product);
     setItems((prev) => {
       const existing = prev.find((i) => i.product.slug === product.slug);
       if (existing) {
-        const newQty = existing.quantity + qty;
+        const newQty = snapToStep(existing.quantity + qty, step);
         const tierPrice = getTierPrice(product, newQty) || product.retailer_price;
         return prev.map((i) =>
           i.product.slug === product.slug
@@ -224,8 +225,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
             : i
         );
       }
-      const tierPrice = getTierPrice(product, qty) || product.retailer_price;
-      return [...prev, { product: { ...product, retailer_price: tierPrice }, quantity: qty }];
+      const startQty = snapToStep(qty, step);
+      const tierPrice = getTierPrice(product, startQty) || product.retailer_price;
+      return [...prev, { product: { ...product, retailer_price: tierPrice }, quantity: startQty }];
     });
     setIsCartOpen(true);
   }, []);
@@ -242,8 +244,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) =>
       prev.map((i) => {
         if (i.product.slug === slug) {
-          const tierPrice = getTierPrice(i.product, qty) || i.product.retailer_price;
-          return { ...i, quantity: qty, product: { ...i.product, retailer_price: tierPrice } };
+          const newQty = snapToStep(qty, getStepSize(i.product));
+          const tierPrice = getTierPrice(i.product, newQty) || i.product.retailer_price;
+          return { ...i, quantity: newQty, product: { ...i.product, retailer_price: tierPrice } };
         }
         return i;
       })

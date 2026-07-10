@@ -5,7 +5,7 @@ import { useCart } from "../lib/CartContext";
 import CheckoutModal from "./CheckoutModal";
 import Image from "next/image";
 
-import { type RetailerInfo } from "../lib/api";
+import { getStepSize, type RetailerInfo } from "../lib/api";
 
 export default function CartDrawer({
   prefilledCustomer,
@@ -80,7 +80,8 @@ export default function CartDrawer({
             items.map((item) => {
               // Ensure we use the newly downloaded hero slide image instead of the old one
               const imgSrc = item.product.image === "/hero.png" ? "/images/hero-slide-1.webp" : item.product.image;
-              
+              const step = getStepSize(item.product);
+
               return (
                 <div key={item.product.slug} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "20px 0", borderBottom: "1px solid rgba(23,58,87,0.06)" }}>
                   
@@ -103,9 +104,9 @@ export default function CartDrawer({
                     <div style={{ fontSize: "16px", fontWeight: 800 }}>{fmt(item.product.retailer_price * item.quantity)}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "4px", backgroundColor: "#fff", borderRadius: "8px", border: "1px solid rgba(23,58,87,0.1)", padding: "2px" }}>
-                        <button onClick={() => updateQuantity(item.product.slug, item.quantity - 1)} style={{ width: "24px", height: "24px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", cursor: "pointer", border: "none", backgroundColor: "transparent", color: "#173A57" }}>−</button>
-                        <span style={{ width: "20px", textAlign: "center", fontSize: "13px", fontWeight: 700 }}>{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.product.slug, item.quantity + 1)} style={{ width: "24px", height: "24px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", cursor: "pointer", border: "none", backgroundColor: "transparent", color: "#173A57" }}>+</button>
+                        <button onClick={() => updateQuantity(item.product.slug, item.quantity - step)} style={{ width: "24px", height: "24px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", cursor: "pointer", border: "none", backgroundColor: "transparent", color: "#173A57" }}>−</button>
+                        <span style={{ minWidth: "24px", textAlign: "center", fontSize: "13px", fontWeight: 700 }}>{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.product.slug, item.quantity + step)} style={{ width: "24px", height: "24px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", cursor: "pointer", border: "none", backgroundColor: "transparent", color: "#173A57" }}>+</button>
                       </div>
                       <button onClick={() => removeItem(item.product.slug)} aria-label="Entfernen" style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "none", backgroundColor: "rgba(239, 68, 68, 0.1)", color: "#EF4444", borderRadius: "6px", transition: "0.2s" }}>
                         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>

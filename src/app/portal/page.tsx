@@ -54,6 +54,7 @@ import {
   uploadVatDocument,
   getCachedDiscountTiers,
   getCachedMinOrderValue,
+  getStepSize,
   type CustomerAddressDb
 } from "@/lib/api";
 import { useCart } from "@/lib/CartContext";
@@ -239,7 +240,8 @@ function PortalProductCard({
   product: ApiProduct; 
   onAddToCart: (product: ApiProduct, qty: number, pricePerKarton: number) => void;
 }) {
-  const [qty, setQty] = useState(1);
+  const step = getStepSize(product);
+  const [qty, setQty] = useState(step);
   const tiers = product.tiers ?? [];
   const unitsPerBox = product.units_per_item ?? 1;
 
@@ -335,8 +337,9 @@ function PortalProductCard({
             <div className="flex items-center gap-2.5 rounded-full px-4 flex-1 bg-[#f5f4ef] border border-[#173A57]/10 h-11">
               <button 
                 type="button"
-                onClick={() => setQty(Math.max(1, qty - 1))} 
-                className="w-5 h-5 flex items-center justify-center rounded text-[#173A57]/60 hover:text-[#173A57] hover:bg-[#173A57]/5 transition-colors cursor-pointer border-none bg-transparent"
+                onClick={() => setQty(Math.max(step, qty - step))}
+                disabled={qty <= step}
+                className="w-5 h-5 flex items-center justify-center rounded text-[#173A57]/60 hover:text-[#173A57] hover:bg-[#173A57]/5 transition-colors cursor-pointer border-none bg-transparent disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Minus size={12} />
               </button>
@@ -348,7 +351,7 @@ function PortalProductCard({
               </div>
               <button 
                 type="button"
-                onClick={() => setQty(qty + 1)} 
+                onClick={() => setQty(qty + step)}
                 className="w-5 h-5 flex items-center justify-center rounded text-[#173A57]/60 hover:text-[#173A57] hover:bg-[#173A57]/5 transition-colors cursor-pointer border-none bg-transparent"
               >
                 <Plus size={12} />
@@ -362,6 +365,12 @@ function PortalProductCard({
               </div>
             </div>
           </div>
+
+          {step > 1 && (
+            <p className="text-[10px] text-[#173A57]/50 px-1">
+              Abnahme nur in {step}er-Schritten (Vielfache von {step} Kartons).
+            </p>
+          )}
 
           {hasDeposit && (
             <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[10px] bg-[#f5f4ef] border border-[#173A57]/10">
