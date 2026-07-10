@@ -242,8 +242,10 @@ function PortalProductCard({
 }) {
   const step = getStepSize(product);
   const [qty, setQty] = useState(step);
-  const tiers = product.tiers ?? [];
   const unitsPerBox = product.units_per_item ?? 1;
+
+  // Staffeln, die komplett unterhalb der Mindestmenge (= Schrittweite) liegen, sind nicht bestellbar.
+  const tiers = (product.tiers ?? []).filter((t) => t.max === null || t.max >= step);
 
   // Find active tier
   const activeTierIndex = tiers.findIndex((t) => qty >= t.min && (t.max === null || qty <= t.max));
@@ -300,7 +302,9 @@ function PortalProductCard({
             <div className="space-y-1">
               {tiers.map((tier, i) => {
                 const isActive = i === activeTierIndex;
-                const label = tier.max === null ? `ab ${tier.min} Kartons` : `${tier.min}–${tier.max} Karton${tier.max !== 1 ? "s" : ""}`;
+                // Unterhalb der Mindestmenge kann nicht bestellt werden, also die Staffelgrenze anheben.
+                const tierMin = Math.max(tier.min, step);
+                const label = tier.max === null ? `ab ${tierMin} Kartons` : `${tierMin}–${tier.max} Karton${tier.max !== 1 ? "s" : ""}`;
                 const tierPricePerUnit = tier.price / unitsPerBox;
                 return (
                   <div key={i} className={`flex flex-col gap-1 px-2.5 py-1.5 rounded-lg transition-all duration-200 ${isActive ? "bg-[#173A57] text-white" : "bg-white border border-[#173A57]/5"}`}>
