@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCart, calculateShippingCost } from "../lib/CartContext";
 import { sendLoginCode, verifyLoginCode, createOrder, fetchProducts, fetchShippingCost, getCachedVatRates, validateVatId, getRetailerAddresses, type OrderItem, type RetailerInfo, type CustomerAddressDb } from "../lib/api";
 
@@ -111,7 +111,7 @@ export default function CheckoutModal({
   prefilledCustomer?: RetailerInfo;
   initialCode?: string;
 }) {
-  const { items, subtotal, totalDeposit, discountPercent, discountAmount, clearCart, refreshCartProducts } = useCart();
+  const { items, subtotal, totalDeposit, discountPercent, discountAmount, clearCart, refreshCartProducts, shippingZip: storedShippingZip, setShippingZip: persistShippingZip } = useCart();
   const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
   const hasPrefilled = !!(prefilledCustomer && initialCode);
@@ -327,6 +327,7 @@ export default function CheckoutModal({
       const cost = await fetchShippingCost(countryCode, zip.trim(), shippingItems);
       setShippingCost(cost);
       setShippingCheckedSig(sig);
+      persistShippingZip(zip.trim()); // PLZ für Warenkorb / nächsten Checkout merken
       return true;
     } catch {
       if (hasDynamicShipping) {
@@ -361,6 +362,27 @@ export default function CheckoutModal({
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentShippingSig, hasDynamicShipping]);
+
+  // Zuletzt geprüfte PLZ übernehmen, falls das Formular noch keine hat.
+  const zipSeededRef = useRef(false);
+  useEffect(() => {
+    if (zipSeededRef.current) return;
+    zipSeededRef.current = true;
+    if (!zip && storedShippingZip) setZip(storedShippingZip);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedShippingZip]);
+
+  // Ist beim Öffnen bereits eine PLZ vorhanden (gemerkt oder aus der Adresse),
+  // den dynamischen Versand einmal automatisch berechnen – ohne manuellen Klick.
+  const autoCheckedRef = useRef(false);
+  useEffect(() => {
+    if (autoCheckedRef.current) return;
+    if (step !== "address" || !hasDynamicShipping) return;
+    if (!zip.trim() || !requireShippingCheck) return;
+    autoCheckedRef.current = true;
+    void checkShipping();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, zip, hasDynamicShipping, requireShippingCheck]);
 
   // ─── VAT calculation ────────────────────────────────────────────────────
   const isVatExempt = !!(vatId && vatChecked && countryCode !== "DE");

@@ -14,9 +14,16 @@ export default function CartDrawer({
   prefilledCustomer?: RetailerInfo;
   initialCode?: string;
 }) {
-  const { items, totalItems, subtotal, totalDeposit, totalShipping, discountPercent, discountAmount, minOrderValue, grandTotal, updateQuantity, removeItem, closeCart, isCartOpen } = useCart();
+  const { items, totalItems, subtotal, totalDeposit, shippingCost, shippingLoading, shippingZip, setShippingZip, discountPercent, discountAmount, minOrderValue, grandTotal, updateQuantity, removeItem, closeCart, isCartOpen } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  
+
+  // Hat der Retailer bereits eine PLZ hinterlegt, kann der Versand sofort berechnet werden.
+  useEffect(() => {
+    if (!shippingZip && prefilledCustomer?.address?.zip) {
+      setShippingZip(prefilledCustomer.address.zip);
+    }
+  }, [shippingZip, prefilledCustomer, setShippingZip]);
+
   useEffect(() => {
     if (isCartOpen || checkoutOpen) {
       document.body.style.overflow = "hidden";
@@ -129,13 +136,24 @@ export default function CartDrawer({
                 <span>-{fmt(discountAmount)}</span>
               </div>
             )}
-            {totalShipping > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", opacity: 0.7 }}><span>Versand (Deutschland)</span><span>{fmt(totalShipping)}</span></div>}
-            
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed rgba(23,58,87,0.1)", fontSize: "15px", fontWeight: 700 }}><span>Zwischensumme (netto)</span><span>{fmt(subtotal - discountAmount + totalShipping)}</span></div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "14px", opacity: 0.7 }}>
+              <span>Versand{shippingZip ? ` (${shippingZip})` : ""}</span>
+              <span>
+                {shippingLoading ? "wird berechnet…"
+                  : shippingCost === null ? "nach PLZ"
+                  : shippingCost > 0 ? fmt(shippingCost)
+                  : "Kostenfrei"}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed rgba(23,58,87,0.1)", fontSize: "15px", fontWeight: 700 }}><span>Zwischensumme (netto)</span><span>{fmt(subtotal - discountAmount + (shippingCost ?? 0))}</span></div>
             
             {totalDeposit > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", fontSize: "14px", opacity: 0.7 }}><span>Pfand (steuerfrei)</span><span>{fmt(totalDeposit)}</span></div>}
             
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(23,58,87,0.08)", fontSize: "20px", fontWeight: 800 }}><span>Gesamtsumme</span><span>{fmt(grandTotal)}</span></div>
+            {shippingCost === null && (
+              <div style={{ textAlign: "right", fontSize: "12px", opacity: 0.6, marginTop: "4px" }}>zzgl. Versand – PLZ im Checkout angeben</div>
+            )}
             <button 
               disabled={subtotal < minOrderValue} 
               onClick={() => { closeCart(); setCheckoutOpen(true); }} 

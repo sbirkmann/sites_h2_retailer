@@ -1,8 +1,24 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { DisplayProduct } from "./products";
-import { getStepSize, snapToStep, type ApiProduct } from "./api";
+import { getStepSize, snapToStep, fetchShippingCost, type ApiProduct } from "./api";
+
+// ─── Persistierte Versand-PLZ ────────────────────────────────────────────────
+// Die im Checkout geprüfte PLZ wird gemerkt, damit Warenkorb und ein erneuter
+// Checkout den Versand direkt anzeigen können.
+const SHIPPING_ZIP_KEY = "retailer_shipping_zip";
+function readStoredZip(): string {
+  if (typeof window === "undefined") return "";
+  try { return window.localStorage.getItem(SHIPPING_ZIP_KEY) || ""; } catch { return ""; }
+}
+function writeStoredZip(zip: string) {
+  if (typeof window === "undefined") return;
+  try {
+    if (zip) window.localStorage.setItem(SHIPPING_ZIP_KEY, zip);
+    else window.localStorage.removeItem(SHIPPING_ZIP_KEY);
+  } catch { /* Speicher nicht verfügbar */ }
+}
 
 // ─── Cart Item ──────────────────────────────────────────────────────────────
 
@@ -19,6 +35,10 @@ interface CartContextValue {
   subtotal: number;
   totalDeposit: number;
   totalShipping: number;
+  shippingCost: number | null; // null = unbekannt (PLZ für dynamischen Versand nötig)
+  shippingLoading: boolean;
+  shippingZip: string;
+  setShippingZip: (zip: string) => void;
   discountPercent: number;
   discountAmount: number;
   discountedSubtotal: number;
@@ -211,6 +231,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [minOrderValue, setMinOrderValue] = useState<number>(200.0);
   const [discountTiers, setDiscountTiers] = useState<{ from: number; to: number | null; discount_percent: number }[]>([]);
 
+  // Versand-PLZ (persistiert) und daraus serverseitig berechnete Kosten.
+  const [shippingZip, setShippingZipState] = useState<string>(() => readStoredZip());
+  const [shippingCost, setShippingCost] = useState<number | null>(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+
+  const setShippingZip = useCallback((zip: string) => {
+    const z = (zip || "").trim();
+    setShippingZipState(z);
+    writeStoredZip(z);
+  }, []);
+
   const setB2bConfig = useCallback((tiers: { from: number; to: number | null; discount_percent: number }[], minOrderVal: number) => {
     setDiscountTiers(tiers || []);
     setMinOrderValue(minOrderVal ?? 200.0);
@@ -312,8 +343,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
     0
   );
 
-  // Versandkosten
-  const totalShipping = calculateShippingCost(items);
+  // Versandkosten serverseitig berechnen, sobald sich Positionen oder PLZ ändern.
+  const hasDynamicShipping = items.some((i) => i.product.shipping_dynamic === true);
+  const shippingItemsSig = items.map((i) => `${i.product.type}:${i.product.id}:${i.quantity}`).join(",");
+  useEffect(() => {
+    if (items.length === 0) { setShippingCost(0); return; }
+    // Dynamischer Versand braucht eine PLZ; ohne bleibt der Preis unbekannt (null).
+    if (hasDynamicShipping && !shippingZip) { setShippingCost(null); return; }
+    const payload = items.map((i) =>
+      i.product.type === "bundle"
+        ? { bunde_product_id: i.product.id, quantity: i.quantity }
+        : { product_id: i.product.id, quantity: i.quantity }
+    );
+    let cancelled = false;
+    setShippingLoading(true);
+    fetchShippingCost("DE", shippingZip, payload)
+      .then((cost) => { if (!cancelled) setShippingCost(cost); })
+      .catch(() => {
+        if (cancelled) return;
+        if (hasDynamicShipping) { setShippingCost(null); return; }
+        const local = calculateShippingCost(items);
+        setShippingCost(Number.isFinite(local) ? local : 0);
+      })
+      .finally(() => { if (!cancelled) setShippingLoading(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shippingItemsSig, shippingZip, hasDynamicShipping]);
+
+  const totalShipping = shippingCost ?? 0;
 
   // B2B discount calculation
   let discountPercent = 0.0;
@@ -341,6 +398,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         subtotal,
         totalDeposit,
         totalShipping,
+        shippingCost,
+        shippingLoading,
+        shippingZip,
+        setShippingZip,
         discountPercent,
         discountAmount,
         discountedSubtotal,
