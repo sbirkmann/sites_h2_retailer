@@ -50,6 +50,7 @@ import {
   ApiProduct,
   RetailerInfo,
   RetailerOrder,
+  RetailerOrderItem,
   MarketingDownload,
   uploadVatDocument,
   getCachedDiscountTiers,
@@ -61,6 +62,9 @@ import { useCart } from "@/lib/CartContext";
 import { apiProductToDisplay } from "@/lib/products";
 import CartDrawer from "@/components/CartDrawer";
 import CheckoutModal from "@/components/CheckoutModal";
+
+// Bestellungen liefern kein Land mit; für die Aufschlüsselung der Historie gilt der DE-Satz.
+const ORDER_VAT_RATE = 0.19;
 
 // ─── Cookie Helpers ──────────────────────────────────────────────────────────
 
@@ -667,6 +671,51 @@ export default function RetailerPortalPage() {
       setError("Die Artikel dieser Bestellung konnten im aktuellen Katalog nicht gefunden werden.");
     }
   }, [catalog, addItem, clearCart]);
+
+  // Bestellpositionen tragen den internen Produktnamen; für die Anzeige den Katalognamen bevorzugen.
+  const orderItemName = React.useCallback(
+    (item: RetailerOrderItem) => {
+      const match = catalog.find((p) => {
+        if (item.bunde_product_id !== null && p.type === "bundle") return p.id === item.bunde_product_id;
+        if (item.product_id !== null && p.type === "product") return p.id === item.product_id;
+        return false;
+      });
+      return match?.name ?? item.product_name;
+    },
+    [catalog]
+  );
+
+  // Die Orders-API liefert nur die Gesamtsumme (brutto). Pfand kommt wie im Checkout aus dem
+  // Katalog (deposit = Pfand pro Karton), der Rest der Summe ist Versand + USt — Pfand ist steuerfrei.
+  const orderTotals = React.useCallback(
+    (order: RetailerOrder) => {
+      if (order.payment_amount === null) return null;
+
+      const mainItems = order.items.filter((i) => i.parent_item_id === null);
+      const itemsNet = mainItems.reduce((sum, i) => sum + (i.unit_price ?? 0) * i.quantity, 0);
+
+      const depositTotal = mainItems.reduce((sum, i) => {
+        const product = catalog.find((p) =>
+          i.bunde_product_id !== null && p.type === "bundle"
+            ? p.id === i.bunde_product_id
+            : i.product_id !== null && p.type === "product"
+              ? p.id === i.product_id
+              : false
+        );
+        return sum + (product?.deposit ?? 0) * i.quantity;
+      }, 0);
+
+      const netTotal = (order.payment_amount - depositTotal) / (1 + ORDER_VAT_RATE);
+      const vatAmount = netTotal * ORDER_VAT_RATE;
+      const shippingNet = netTotal - itemsNet;
+
+      // Rechnet die Aufschlüsselung nicht auf (fremder Steuersatz, Rabatt, Altbestellung), lieber nichts zeigen.
+      if (netTotal < 0 || shippingNet < -0.01) return null;
+
+      return { itemsNet, shippingNet, vatAmount, depositTotal, grossTotal: order.payment_amount };
+    },
+    [catalog]
+  );
 
   // Load profile data and standard customer address
   const loadInfo = React.useCallback(async (email: string, code: string) => {
@@ -1943,30 +1992,86 @@ export default function RetailerPortalPage() {
                             <div>
                               <p className="text-[10px] text-navy/40 font-bold uppercase tracking-wider mb-2">Bestellte Artikel</p>
                               <ul className="divide-y divide-navy/5">
-                                {order.items.map((item) => (
-                                  <li key={item.id} className="py-2.5 flex items-center justify-between gap-4 text-xs md:text-sm">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-bold text-navy/60 min-w-[20px]">{item.quantity}x</span>
-                                      <span className="font-semibold text-navy">{item.product_name}</span>
-                                      {item.is_bundle_item && (
-                                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[9px] font-bold rounded uppercase tracking-wider">
-                                          Bundle
+                                {order.items.map((item) => {
+                                  // Unterpositionen eines Bundles hängen über parent_item_id an der Hauptposition.
+                                  const isBundleChild = item.parent_item_id !== null;
+                                  return (
+                                    <li
+                                      key={item.id}
+                                      className={
+                                        isBundleChild
+                                          ? "py-1.5 pl-6 flex items-center justify-between gap-4 text-[11px] md:text-xs text-navy/50 border-l-2 border-navy/10 ml-1"
+                                          : "py-2.5 flex items-center justify-between gap-4 text-xs md:text-sm"
+                                      }
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span className={`font-bold min-w-[20px] ${isBundleChild ? "text-navy/40" : "text-navy/60"}`}>
+                                          {item.quantity}x
+                                        </span>
+                                        <span className={isBundleChild ? "font-medium text-navy/60" : "font-semibold text-navy"}>
+                                          {orderItemName(item)}
+                                        </span>
+                                        {isBundleChild ? (
+                                          <span className="px-1.5 py-0.5 bg-navy/5 text-navy/40 text-[9px] font-bold rounded uppercase tracking-wider">
+                                            im Bundle enthalten
+                                          </span>
+                                        ) : (
+                                          item.is_bundle_item && (
+                                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[9px] font-bold rounded uppercase tracking-wider">
+                                              Bundle
+                                            </span>
+                                          )
+                                        )}
+                                      </div>
+                                      {!isBundleChild && item.unit_price !== null && (
+                                        <span className="text-navy/60 font-mono text-xs md:text-sm">
+                                          {(item.unit_price * item.quantity).toLocaleString("de-DE", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                          })}{" "}
+                                          €
                                         </span>
                                       )}
-                                    </div>
-                                    {item.unit_price !== null && (
-                                      <span className="text-navy/60 font-mono text-xs md:text-sm">
-                                        {(item.unit_price * item.quantity).toLocaleString("de-DE", {
-                                          minimumFractionDigits: 2,
-                                          maximumFractionDigits: 2,
-                                        })}{" "}
-                                        €
-                                      </span>
-                                    )}
-                                  </li>
-                                ))}
+                                    </li>
+                                  );
+                                })}
                               </ul>
                             </div>
+
+                            {(() => {
+                              const totals = orderTotals(order);
+                              if (!totals) return null;
+                              const fmtEur = (v: number) =>
+                                `${v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+                              return (
+                                <div className="rounded-xl bg-[#f5f4ef]/60 border border-navy/5 p-3 text-xs space-y-1">
+                                  <div className="flex justify-between text-navy/60">
+                                    <span>Warenwert (netto)</span>
+                                    <span className="font-mono">{fmtEur(totals.itemsNet)}</span>
+                                  </div>
+                                  {totals.shippingNet > 0.005 && (
+                                    <div className="flex justify-between text-navy/60">
+                                      <span>Versand (netto)</span>
+                                      <span className="font-mono">{fmtEur(totals.shippingNet)}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between text-navy/60">
+                                    <span>zzgl. {(ORDER_VAT_RATE * 100).toLocaleString("de-DE")}% MwSt.</span>
+                                    <span className="font-mono">{fmtEur(totals.vatAmount)}</span>
+                                  </div>
+                                  {totals.depositTotal > 0 && (
+                                    <div className="flex justify-between text-navy/60">
+                                      <span>Pfand (steuerfrei)</span>
+                                      <span className="font-mono">{fmtEur(totals.depositTotal)}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between pt-1.5 mt-1.5 border-t border-navy/10 font-bold text-navy">
+                                    <span>Gesamtsumme</span>
+                                    <span className="font-mono">{fmtEur(totals.grossTotal)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             {order.notes && (
                               <div className="bg-[#f5f4ef]/30 border-l-2 border-[#173A57]/30 rounded-r-xl p-3 text-xs italic text-navy/70">
