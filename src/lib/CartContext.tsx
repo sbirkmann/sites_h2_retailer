@@ -334,12 +334,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     0
   );
 
-  // totalDeposit = Pfand pro Dose × Dosen pro Karton × Anzahl Kartons
+  // totalDeposit = Pfand pro Karton × Anzahl Kartons
   const totalDeposit = items.reduce(
-    (sum, i) => {
-      const multiplier = i.product.unitsPerItem || i.product.units_per_item || 1;
-      return sum + i.product.deposit * multiplier * i.quantity;
-    },
+    (sum, i) => sum + i.product.deposit * i.quantity,
     0
   );
 

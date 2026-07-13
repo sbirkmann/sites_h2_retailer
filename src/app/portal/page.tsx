@@ -253,7 +253,8 @@ function PortalProductCard({
   const pricePerKarton = activeTier.price;
 
   const productTotal = pricePerKarton * qty;
-  const depositTotal = product.deposit * unitsPerBox * qty;
+  // product.deposit ist bereits das Pfand pro Karton (nicht pro Dose).
+  const depositTotal = product.deposit * qty;
   const hasDeposit = product.deposit > 0;
 
   const pricePerUnit = pricePerKarton / unitsPerBox;
@@ -376,15 +377,17 @@ function PortalProductCard({
             </p>
           )}
 
-          {hasDeposit && (
-            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[10px] bg-[#f5f4ef] border border-[#173A57]/10">
-              <span className="text-[#173A57]/60">♻ Pfand (steuerfrei)</span>
-              <span className="text-[#173A57] font-semibold">
-                +{depositTotal.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €
-                <span className="text-[#173A57]/40 text-[9px]"> ({(product.deposit * unitsPerBox).toLocaleString("de-DE", { minimumFractionDigits: 2 })} €/Karton)</span>
-              </span>
-            </div>
-          )}
+          {/* Platz auch ohne Pfand reservieren, damit Karten gleich hoch bleiben. */}
+          <div
+            aria-hidden={!hasDeposit}
+            className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[10px] bg-[#f5f4ef] border border-[#173A57]/10 ${hasDeposit ? "" : "invisible"}`}
+          >
+            <span className="text-[#173A57]/60">♻ Pfand (steuerfrei)</span>
+            <span className="text-[#173A57] font-semibold">
+              +{depositTotal.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €
+              <span className="text-[#173A57]/40 text-[9px]"> ({product.deposit.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €/Karton)</span>
+            </span>
+          </div>
 
           {uvp ? (
             <div className="rounded-lg p-2.5 text-left bg-[#f5f4ef] border border-[#173A57]/10 text-[11px] space-y-1">
