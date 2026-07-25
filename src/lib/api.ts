@@ -91,6 +91,8 @@ export interface RetailerInfo {
   email: string;
   phone: string | null;
   is_retailer: boolean;
+  /** "anfrage" (Default) = nur Preisanfrage möglich, "kauf" = direkter Kauf freigegeben. */
+  order_type?: "anfrage" | "kauf";
   info_name: string | null;
   info_website: string | null;
   info_tel: string | null;
@@ -619,6 +621,71 @@ export async function deleteRetailerAddress(email: string, code: string, address
   }
   const body = await res.json();
   return !!body.success;
+}
+
+// ─── Bestellanfrage (Order Request) ──────────────────────────────────────────
+
+export interface OrderRequestItem {
+  product_id?: number;
+  bunde_product_id?: number;
+  quantity: number;
+}
+
+export interface OrderRequestShippingAddress {
+  first_name: string;
+  last_name: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  zip: string;
+  country: string;
+  phone?: string;
+}
+
+export interface CreateOrderRequestPayload {
+  email: string;
+  code: string;
+  items: OrderRequestItem[];
+  shipping_address?: OrderRequestShippingAddress;
+  note?: string;
+}
+
+export interface OrderRequestResponseItem {
+  id: number;
+  product_id: number | null;
+  bunde_product_id: number | null;
+  item_name: string;
+  quantity: number;
+}
+
+export interface CreateOrderRequestResponse {
+  success: boolean;
+  message: string;
+  data: {
+    id: number;
+    customer_id: number;
+    type: "anfrage" | "kauf";
+    status: string;
+    shipping_address: Record<string, unknown> | null;
+    note: string | null;
+    zoho_ticket_id: string | null;
+    items: OrderRequestResponseItem[];
+  };
+}
+
+export async function createRetailerOrderRequest(
+  payload: CreateOrderRequestPayload
+): Promise<CreateOrderRequestResponse> {
+  const res = await fetch(`${API_BASE}/retailer/order-request`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Anfrage konnte nicht übermittelt werden.");
+  }
+  return res.json();
 }
 
 export interface CreateSupportTicketPayload {

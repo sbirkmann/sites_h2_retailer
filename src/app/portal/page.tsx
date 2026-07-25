@@ -47,6 +47,7 @@ import {
   updateRetailerAddress,
   deleteRetailerAddress,
   createSupportTicket,
+  createRetailerOrderRequest,
   ApiProduct,
   RetailerInfo,
   RetailerOrder,
@@ -429,6 +430,71 @@ function PortalProductCard({
   );
 }
 
+// ─── B2B Portal "Anfrage"-Produktzeile (kein Preis, nur Mindestpreis-Hinweis) ─
+
+function AnfrageProductRow({
+  product,
+  qty,
+  onChange,
+}: {
+  product: ApiProduct;
+  qty: number;
+  onChange: (qty: number) => void;
+}) {
+  const step = getStepSize(product);
+  const unitsPerBox = product.units_per_item ?? 1;
+  const tiers = (product.tiers ?? []).filter((t) => t.max === null || t.max >= step);
+  const lowestPricePerKarton = tiers.length > 0
+    ? Math.min(...tiers.map((t) => t.price))
+    : product.retailer_price;
+  const lowestPricePerUnit = lowestPricePerKarton / unitsPerBox;
+
+  return (
+    <div className="flex items-center gap-4 py-4 border-b border-[#173A57]/10 last:border-b-0">
+      <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#f5f4ef] flex items-center justify-center">
+        {product.image ? (
+          <Image unoptimized src={product.image} alt={product.name} fill sizes="56px" className="object-cover" style={{ objectPosition: "center top" }} />
+        ) : (
+          <Package size={22} className="text-[#173A57]/20" />
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-bold uppercase text-[#173A57] leading-snug truncate">{product.name}</h4>
+        <p className="text-[11px] text-[#173A57]/50 leading-snug">
+          {unitsPerBox > 1 ? `${unitsPerBox} Stk. je Karton` : null}
+          {unitsPerBox > 1 && " · "}
+          ab {lowestPricePerUnit.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € netto / Stk.
+        </p>
+        {step > 1 && (
+          <p className="text-[10px] text-[#173A57]/40">Nur in {step}er-Schritten bestellbar.</p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2.5 rounded-full px-4 bg-[#f5f4ef] border border-[#173A57]/10 h-11 flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(0, qty - step))}
+          disabled={qty <= 0}
+          className="w-5 h-5 flex items-center justify-center rounded text-[#173A57]/60 hover:text-[#173A57] hover:bg-[#173A57]/5 transition-colors cursor-pointer border-none bg-transparent disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <Minus size={12} />
+        </button>
+        <div className="w-8 text-center leading-none text-xs">
+          <span className="font-bold text-[#173A57]">{qty}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange(qty + step)}
+          className="w-5 h-5 flex items-center justify-center rounded text-[#173A57]/60 hover:text-[#173A57] hover:bg-[#173A57]/5 transition-colors cursor-pointer border-none bg-transparent"
+        >
+          <Plus size={12} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Portal Page ────────────────────────────────────────────────────────
 
 export default function RetailerPortalPage() {
@@ -494,6 +560,36 @@ export default function RetailerPortalPage() {
 
   // Direct Checkout state
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+
+  // Bestellanfrage ("Anfrage"-Modus) State
+  const isAnfrageMode = (retailerInfo?.order_type ?? "anfrage") !== "kauf";
+  const [requestQty, setRequestQty] = useState<Record<number, number>>({});
+  const [requestNote, setRequestNote] = useState("");
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
+  const [showRequestAddressModal, setShowRequestAddressModal] = useState(false);
+  const [requestSelectedAddressId, setRequestSelectedAddressId] = useState<number | "new" | "">("");
+  const [reqAddrFirstName, setReqAddrFirstName] = useState("");
+  const [reqAddrLastName, setReqAddrLastName] = useState("");
+  const [reqAddrAddress1, setReqAddrAddress1] = useState("");
+  const [reqAddrAddress2, setReqAddrAddress2] = useState("");
+  const [reqAddrCity, setReqAddrCity] = useState("");
+  const [reqAddrZip, setReqAddrZip] = useState("");
+  const [reqAddrCountry, setReqAddrCountry] = useState("DE");
+  const [reqAddrPhone, setReqAddrPhone] = useState("");
+
+  const requestTotals = React.useMemo(() => {
+    let totalKartons = 0;
+    let totalUnits = 0;
+    for (const product of catalog) {
+      const qty = requestQty[product.id] || 0;
+      if (qty <= 0) continue;
+      totalKartons += qty;
+      totalUnits += qty * (product.units_per_item ?? 1);
+    }
+    return { totalKartons, totalUnits };
+  }, [catalog, requestQty]);
 
   // VAT states
   const [vatIdInput, setVatIdInput] = useState("");
@@ -614,6 +710,127 @@ export default function RetailerPortalPage() {
     const displayProduct = apiProductToDisplay(product, { retailer_price: pricePerKarton });
     addItem(displayProduct, qty);
   }, [addItem]);
+
+  function handleSetRequestQty(productId: number, qty: number) {
+    setRequestQty((prev) => ({ ...prev, [productId]: Math.max(0, qty) }));
+  }
+
+  function resetReqAddressForm() {
+    setReqAddrFirstName("");
+    setReqAddrLastName("");
+    setReqAddrAddress1("");
+    setReqAddrAddress2("");
+    setReqAddrCity("");
+    setReqAddrZip("");
+    setReqAddrCountry("DE");
+    setReqAddrPhone("");
+  }
+
+  function handleOpenRequestAddressModal() {
+    setRequestError(null);
+    if (addresses.length > 0) {
+      setRequestSelectedAddressId(addresses[0].id);
+    } else {
+      setRequestSelectedAddressId("new");
+      resetReqAddressForm();
+    }
+    setShowRequestAddressModal(true);
+  }
+
+  async function handleSubmitOrderRequest() {
+    setRequestError(null);
+    const items = catalog
+      .map((product) => ({ product, qty: requestQty[product.id] || 0 }))
+      .filter(({ qty }) => qty > 0)
+      .map(({ product, qty }) =>
+        product.type === "bundle"
+          ? { bunde_product_id: product.id, quantity: qty }
+          : { product_id: product.id, quantity: qty }
+      );
+
+    if (items.length === 0) {
+      setRequestError("Bitte wähle mindestens ein Produkt mit Menge aus.");
+      return;
+    }
+
+    // Ohne hinterlegte Adresse zuerst die Adress-Erfassung anzeigen.
+    if (addresses.length === 0 && requestSelectedAddressId === "") {
+      handleOpenRequestAddressModal();
+      return;
+    }
+
+    const email = getCookie("retailer_email") || "";
+    const code = getCookie("retailer_code") || "";
+    if (!email || !code) {
+      setRequestError("Sitzung abgelaufen. Bitte melde dich erneut an.");
+      return;
+    }
+
+    let shippingAddress: import("@/lib/api").OrderRequestShippingAddress | undefined;
+    if (requestSelectedAddressId === "new") {
+      if (!reqAddrFirstName || !reqAddrLastName || !reqAddrAddress1 || !reqAddrCity || !reqAddrZip) {
+        setShowRequestAddressModal(true);
+        setRequestError("Bitte fülle alle Pflichtfelder der Lieferadresse aus.");
+        return;
+      }
+      shippingAddress = {
+        first_name: reqAddrFirstName,
+        last_name: reqAddrLastName,
+        address1: reqAddrAddress1,
+        address2: reqAddrAddress2 || undefined,
+        city: reqAddrCity,
+        zip: reqAddrZip,
+        country: reqAddrCountry,
+        phone: reqAddrPhone || undefined,
+      };
+    } else if (typeof requestSelectedAddressId === "number") {
+      const addr = addresses.find((a) => a.id === requestSelectedAddressId);
+      if (addr) {
+        shippingAddress = {
+          first_name: addr.first_name,
+          last_name: addr.last_name,
+          address1: addr.address1,
+          address2: addr.address2 || undefined,
+          city: addr.city,
+          zip: addr.zip,
+          country: addr.country,
+          phone: addr.phone || undefined,
+        };
+      }
+    }
+
+    setRequestSubmitting(true);
+    try {
+      await createRetailerOrderRequest({
+        email,
+        code,
+        items,
+        shipping_address: shippingAddress,
+        note: requestNote.trim() || undefined,
+      });
+      setRequestSuccess("Deine Anfrage wurde erfolgreich übermittelt. Wir melden uns mit Preis und Versandkosten.");
+      setRequestQty({});
+      setRequestNote("");
+      setShowRequestAddressModal(false);
+      setRequestSelectedAddressId("");
+    } catch (err) {
+      setRequestError(err instanceof Error ? err.message : "Anfrage konnte nicht übermittelt werden.");
+    } finally {
+      setRequestSubmitting(false);
+    }
+  }
+
+  function handleConfirmRequestAddress() {
+    setRequestError(null);
+    if (requestSelectedAddressId === "new") {
+      if (!reqAddrFirstName || !reqAddrLastName || !reqAddrAddress1 || !reqAddrCity || !reqAddrZip) {
+        setRequestError("Bitte fülle alle Pflichtfelder aus.");
+        return;
+      }
+    }
+    setShowRequestAddressModal(false);
+    handleSubmitOrderRequest();
+  }
 
   const handleReorder = React.useCallback(async (order: RetailerOrder) => {
     clearCart();
@@ -2189,8 +2406,258 @@ export default function RetailerPortalPage() {
               </div>
             )}
 
-            {/* Tab 4: Neue Bestellung */}
-            {activeTab === "order" && (
+            {/* Tab 4: Neue Bestellung / Bestellanfrage */}
+            {activeTab === "order" && isAnfrageMode && (
+              <div className="bg-white border border-navy/10 rounded-2xl p-6 md:p-8 space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <ShoppingBag className="h-5 w-5 text-[#173A57]" />
+                    <span>Deine Anfrage zusammenstellen</span>
+                  </h3>
+                  <p className="text-xs text-navy/60">
+                    Trag ein, wie viele Kartons du brauchst. Wir melden uns mit Preis und Versandkosten.
+                  </p>
+                </div>
+
+                {requestSuccess && (
+                  <div className="p-4 rounded-xl bg-green-50 text-green-700 text-xs flex items-start gap-2 border border-green-100">
+                    <Check className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>{requestSuccess}</span>
+                  </div>
+                )}
+
+                {requestError && (
+                  <div className="p-4 rounded-xl bg-red-50 text-red-700 text-xs flex items-start gap-2 border border-red-100">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>{requestError}</span>
+                  </div>
+                )}
+
+                {catalogLoading && (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-10 h-10 border-4 border-[#173A57]/20 border-t-[#173A57] rounded-full animate-spin" />
+                    <p className="text-sm text-navy/60">Lade Produktkatalog...</p>
+                  </div>
+                )}
+
+                {catalogError && (
+                  <div className="p-4 rounded-xl bg-red-50 text-red-700 text-xs flex items-start gap-2 border border-red-100">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>{catalogError}</span>
+                  </div>
+                )}
+
+                {!catalogLoading && !catalogError && (
+                  <>
+                    <div className="bg-white border border-[#173A57]/10 rounded-2xl px-5">
+                      {catalog.map((product) => (
+                        <AnfrageProductRow
+                          key={product.id}
+                          product={product}
+                          qty={requestQty[product.id] || 0}
+                          onChange={(qty) => handleSetRequestQty(product.id, qty)}
+                        />
+                      ))}
+                      {catalog.length === 0 && (
+                        <div className="text-center py-8 text-sm text-navy/40 italic">
+                          Keine Produkte im B2B-Katalog verfügbar.
+                        </div>
+                      )}
+                    </div>
+
+                    {catalog.length > 0 && (
+                      <>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                            Notiz (optional)
+                          </label>
+                          <textarea
+                            value={requestNote}
+                            onChange={(e) => setRequestNote(e.target.value)}
+                            rows={3}
+                            maxLength={1000}
+                            placeholder="Besondere Wünsche, Liefertermin, etc."
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                          />
+                        </div>
+
+                        <div className="bg-[#f5f4ef] border border-[#173A57]/10 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="text-xs">
+                            <span className="text-[#173A57]/50">Deine Auswahl: </span>
+                            <span className="font-bold text-[#173A57]">
+                              {requestTotals.totalKartons.toLocaleString("de-DE")} Kartons · {requestTotals.totalUnits.toLocaleString("de-DE")} Einheiten
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleSubmitOrderRequest}
+                            disabled={requestSubmitting || requestTotals.totalKartons === 0}
+                            className="bg-[#173A57] hover:bg-[#173A57]/90 text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow active:scale-[0.98] text-xs cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider border-none disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {requestSubmitting ? (
+                              <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <>
+                                <ShoppingCart size={13} />
+                                <span>Anfrage senden</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {/* Adress-Popup, falls noch keine Lieferadresse hinterlegt ist */}
+                {showRequestAddressModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+                      <h4 className="font-bold text-sm uppercase text-navy border-b border-navy/5 pb-2">
+                        Lieferadresse für deine Anfrage
+                      </h4>
+
+                      {requestError && (
+                        <div className="p-3 rounded-lg bg-red-50 text-red-700 text-xs border border-red-100">
+                          {requestError}
+                        </div>
+                      )}
+
+                      {addresses.length > 0 && (
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-navy/70 mb-1">
+                            Gespeicherte Adresse verwenden
+                          </label>
+                          <select
+                            value={requestSelectedAddressId === "" ? "" : String(requestSelectedAddressId)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setRequestSelectedAddressId(val === "new" ? "new" : Number(val));
+                            }}
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs cursor-pointer"
+                          >
+                            {addresses.map((addr) => (
+                              <option key={addr.id} value={addr.id}>
+                                {addr.first_name} {addr.last_name} – {addr.address1}, {addr.zip} {addr.city}
+                              </option>
+                            ))}
+                            <option value="new">Neue Adresse eingeben</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {requestSelectedAddressId === "new" && (
+                        <div className="space-y-3 pt-1">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input
+                              type="text"
+                              required
+                              placeholder="Vorname *"
+                              value={reqAddrFirstName}
+                              onChange={(e) => setReqAddrFirstName(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                            />
+                            <input
+                              type="text"
+                              required
+                              placeholder="Nachname *"
+                              value={reqAddrLastName}
+                              onChange={(e) => setReqAddrLastName(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input
+                              type="text"
+                              required
+                              placeholder="Straße & Hausnummer *"
+                              value={reqAddrAddress1}
+                              onChange={(e) => setReqAddrAddress1(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Adresszusatz (optional)"
+                              value={reqAddrAddress2}
+                              onChange={(e) => setReqAddrAddress2(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <input
+                              type="text"
+                              required
+                              placeholder="PLZ *"
+                              value={reqAddrZip}
+                              onChange={(e) => setReqAddrZip(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                            />
+                            <input
+                              type="text"
+                              required
+                              placeholder="Ort *"
+                              value={reqAddrCity}
+                              onChange={(e) => setReqAddrCity(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                            />
+                            <select
+                              value={reqAddrCountry}
+                              onChange={(e) => setReqAddrCountry(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs cursor-pointer"
+                            >
+                              <option value="DE">Deutschland</option>
+                              <option value="AT">Österreich</option>
+                              <option value="CH">Schweiz</option>
+                              <option value="NL">Niederlande</option>
+                              <option value="BE">Belgien</option>
+                              <option value="FR">Frankreich</option>
+                              <option value="IT">Italien</option>
+                              <option value="ES">Spanien</option>
+                              <option value="PL">Polen</option>
+                              <option value="CZ">Tschechien</option>
+                              <option value="LU">Luxemburg</option>
+                              <option value="DK">Dänemark</option>
+                              <option value="SE">Schweden</option>
+                            </select>
+                          </div>
+                          <input
+                            type="tel"
+                            placeholder="Telefonnummer (optional)"
+                            value={reqAddrPhone}
+                            onChange={(e) => setReqAddrPhone(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-navy/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173A57]/30 text-xs"
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowRequestAddressModal(false)}
+                          className="flex-1 bg-white hover:bg-gray-100 text-[#173A57] border border-navy/10 font-bold py-2 rounded-xl text-xs transition-all cursor-pointer text-center"
+                        >
+                          Abbrechen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleConfirmRequestAddress}
+                          disabled={requestSubmitting}
+                          className="flex-1 bg-[#173A57] hover:bg-[#173A57]/90 text-white font-bold py-2 rounded-xl text-xs uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer border-none"
+                        >
+                          {requestSubmitting ? (
+                            <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            "Anfrage senden"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "order" && !isAnfrageMode && (
               <div className="bg-white border border-navy/10 rounded-2xl p-6 md:p-8 space-y-6">
                 <div>
                   <h3 className="text-xl font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
