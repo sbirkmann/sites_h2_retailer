@@ -32,7 +32,8 @@ import {
   Upload,
   Trash2,
   Edit3,
-  HelpCircle
+  HelpCircle,
+  ChevronDown
 } from "lucide-react";
 import { 
   getRetailerPortalAccessCode, 
@@ -441,56 +442,94 @@ function AnfrageProductRow({
   qty: number;
   onChange: (qty: number) => void;
 }) {
-  const step = getStepSize(product);
+  // Bei Anfragen gilt keine Schrittweite — es kann ab 1 Karton je Produkt angefragt werden.
+  const [showDetails, setShowDetails] = useState(false);
   const unitsPerBox = product.units_per_item ?? 1;
-  const tiers = (product.tiers ?? []).filter((t) => t.max === null || t.max >= step);
+  const tiers = product.tiers ?? [];
   const lowestPricePerKarton = tiers.length > 0
     ? Math.min(...tiers.map((t) => t.price))
     : product.retailer_price;
   const lowestPricePerUnit = lowestPricePerKarton / unitsPerBox;
 
+  const detailSections = [
+    { title: "Vorteile", items: product.benefits ?? [] },
+    { title: "Anwendungsbereiche", items: product.use_cases ?? [] },
+    { title: "Zielgruppen", items: product.targets ?? [] },
+  ].filter((section) => section.items.length > 0);
+  const hasDetails = Boolean(product.description) || detailSections.length > 0;
+
   return (
-    <div className="flex items-center gap-4 py-4 border-b border-[#173A57]/10 last:border-b-0">
-      <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#f5f4ef] flex items-center justify-center">
-        {product.image ? (
-          <Image unoptimized src={product.image} alt={product.name} fill sizes="56px" className="object-cover" style={{ objectPosition: "center top" }} />
-        ) : (
-          <Package size={22} className="text-[#173A57]/20" />
-        )}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-bold uppercase text-[#173A57] leading-snug truncate">{product.name}</h4>
-        <p className="text-[11px] text-[#173A57]/50 leading-snug">
-          {unitsPerBox > 1 ? `${unitsPerBox} Stk. je Karton` : null}
-          {unitsPerBox > 1 && " · "}
-          ab {lowestPricePerUnit.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € netto / Stk.
-        </p>
-        {step > 1 && (
-          <p className="text-[10px] text-[#173A57]/40">Nur in {step}er-Schritten bestellbar.</p>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2.5 rounded-full px-4 bg-[#f5f4ef] border border-[#173A57]/10 h-11 flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => onChange(Math.max(0, qty - step))}
-          disabled={qty <= 0}
-          className="w-5 h-5 flex items-center justify-center rounded text-[#173A57]/60 hover:text-[#173A57] hover:bg-[#173A57]/5 transition-colors cursor-pointer border-none bg-transparent disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <Minus size={12} />
-        </button>
-        <div className="w-8 text-center leading-none text-xs">
-          <span className="font-bold text-[#173A57]">{qty}</span>
+    <div className="py-4 border-b border-[#173A57]/10 last:border-b-0">
+      <div className="flex items-center gap-4">
+        <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#f5f4ef] flex items-center justify-center">
+          {product.image ? (
+            <Image unoptimized src={product.image} alt={product.name} fill sizes="56px" className="object-cover" style={{ objectPosition: "center top" }} />
+          ) : (
+            <Package size={22} className="text-[#173A57]/20" />
+          )}
         </div>
-        <button
-          type="button"
-          onClick={() => onChange(qty + step)}
-          className="w-5 h-5 flex items-center justify-center rounded text-[#173A57]/60 hover:text-[#173A57] hover:bg-[#173A57]/5 transition-colors cursor-pointer border-none bg-transparent"
-        >
-          <Plus size={12} />
-        </button>
+
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-bold uppercase text-[#173A57] leading-snug truncate">{product.name}</h4>
+          <p className="text-[11px] text-[#173A57]/50 leading-snug">
+            {unitsPerBox > 1 ? `${unitsPerBox} Stk. je Karton` : null}
+            {unitsPerBox > 1 && " · "}
+            ab {lowestPricePerUnit.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € netto / Stk.
+          </p>
+          {hasDetails && (
+            <button
+              type="button"
+              onClick={() => setShowDetails((v) => !v)}
+              className="mt-1 flex items-center gap-1 text-[11px] font-bold text-[#173A57]/50 hover:text-[#173A57] transition-colors cursor-pointer border-none bg-transparent p-0"
+            >
+              <ChevronDown size={12} className={`transition-transform ${showDetails ? "rotate-180" : ""}`} />
+              {showDetails ? "Details ausblenden" : "Details anzeigen"}
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2.5 rounded-full px-4 bg-[#f5f4ef] border border-[#173A57]/10 h-11 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(0, qty - 1))}
+            disabled={qty <= 0}
+            className="w-5 h-5 flex items-center justify-center rounded text-[#173A57]/60 hover:text-[#173A57] hover:bg-[#173A57]/5 transition-colors cursor-pointer border-none bg-transparent disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Minus size={12} />
+          </button>
+          <div className="w-8 text-center leading-none text-xs">
+            <span className="font-bold text-[#173A57]">{qty}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange(qty + 1)}
+            className="w-5 h-5 flex items-center justify-center rounded text-[#173A57]/60 hover:text-[#173A57] hover:bg-[#173A57]/5 transition-colors cursor-pointer border-none bg-transparent"
+          >
+            <Plus size={12} />
+          </button>
+        </div>
       </div>
+
+      {showDetails && (
+        <div className="mt-3 sm:ml-[72px] space-y-3 rounded-xl bg-[#f5f4ef] p-4">
+          {product.description && (
+            <p className="text-xs text-[#173A57]/70 leading-relaxed">{product.description}</p>
+          )}
+          {detailSections.map((section) => (
+            <div key={section.title}>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#173A57]/60 mb-1">{section.title}</p>
+              <ul className="space-y-1">
+                {section.items.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-[#173A57]/70">
+                    <span className="mt-1.5 w-1 h-1 rounded-full flex-shrink-0 bg-[#173A57]/40" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2415,7 +2454,7 @@ export default function RetailerPortalPage() {
                     <span>Deine Anfrage zusammenstellen</span>
                   </h3>
                   <p className="text-xs text-navy/60">
-                    Trag ein, wie viele Kartons du brauchst. Wir melden uns mit Preis und Versandkosten.
+                    Damit wir dir als Händler den besten Preis bieten können, sende uns deine individuelle Bestellanfrage. Wir melden uns innerhalb von 24 Stunden bei dir mit einem Angebot.
                   </p>
                 </div>
 
