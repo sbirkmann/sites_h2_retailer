@@ -1798,7 +1798,26 @@ export default function RetailerPortalPage() {
                 {/* Downloads */}
                 <div className="md:col-span-2 space-y-6">
                   <h3 className="text-xl font-bold uppercase tracking-wide">Downloads für Handelspartner</h3>
-                  
+
+                  <div className="bg-[#173A57]/5 border border-[#173A57]/10 rounded-xl p-4 space-y-2">
+                    <p className="text-xs text-navy/70 leading-relaxed">
+                      Hier findest du unsere <strong>druckfertigen Dateien</strong> für Flyer, Aufsteller und weitere Werbemittel –
+                      kostenfrei zum Download und direkt für die Druckerei deiner Wahl vorbereitet.
+                    </p>
+                    <p className="text-xs text-navy/70 leading-relaxed">
+                      Du hast keine Druckerei zur Hand? Über unseren Partner{" "}
+                      <a
+                        href="https://www.wir-machen-druck.de"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-[#173A57] hover:text-[#2563EB] underline underline-offset-2 transition-colors"
+                      >
+                        WIRmachenDRUCK
+                      </a>{" "}
+                      kannst du die Dateien schnell und günstig produzieren lassen.
+                    </p>
+                  </div>
+
                   {downloadsLoading && (
                     <div className="flex justify-center items-center py-12">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy"></div>
@@ -3121,7 +3140,7 @@ export default function RetailerPortalPage() {
                     <span>Support-Assistent</span>
                   </h3>
                   <p className="text-xs text-navy/60">
-                    Wir helfen dir schnell und unkompliziert. Folge den Schritten, um ein Zoho Support-Ticket zu erstellen.
+                    Wir helfen dir schnell und unkompliziert. Folge den Schritten, um eine Support-Anfrage zu erstellen.
                   </p>
                 </div>
 
