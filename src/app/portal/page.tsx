@@ -1781,7 +1781,7 @@ export default function RetailerPortalPage() {
                         <Check className="w-3.5 h-3.5 text-green-600" />
                       </div>
                       <div>
-                        <strong>POS Werbematerial:</strong> Kostenfreie Bereitstellung von Flyern und Aufstellern.
+                        <strong>POS Werbematerial:</strong> Bereitstellung von Druckdateien zur Bestellung bei WIRmachenDRUCK.
                       </div>
                     </li>
                     <li className="flex gap-3">
